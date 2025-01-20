@@ -176,4 +176,42 @@ function superscatter_stresstest()
     return
 end
 
+
+
+function schematic()
+    fig = Graphic(2,1);
+    box1 = fig( Box(0.05, 0.05, 0.9, 0.4));
+    box2 = fig( Box(0.05, 0.525, 0.9, 0.4));
+    
+
+
+    # ax = box( Axis(0.0, 0.0, 1.0, 1.0));
+    # ax.xlim = (-pi,pi)
+    # ax.ylim = (-pi,pi)
+
+    # xs = 2pi*rand(20) .- pi;
+    # ys = sin.(xs);
+    # ss = ax(Scatter(xs, ys, SquarePoint(20, false)));
+
+    # xs = 2pi*rand(20) .- pi;
+    # ys = -0.5xs
+    # ss = ax(Scatter(xs, ys, TrianglePoint(20, true)));
+
+    # xs = 2pi*rand(20) .- pi;
+    # ys = 0.5xs
+    # ss = ax(Scatter(xs, ys, 20));
+
+    # xs = 2pi*rand(20) .- pi;
+    # ys = 0.5xs
+    # ss = ax(Scatter(xs, ys, 20));
+
+    
+    # xs = sort(2pi*rand(20) .- pi);
+    # ys = cos.(xs)
+    # lg = ax(LineGraph(xs, ys, 2));
+    
+    save_to_eps("example.eps", fig);
+    return
+end
+
 end # module Graphicus
