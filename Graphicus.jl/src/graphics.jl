@@ -12,6 +12,9 @@ Text(x,y,s,fs,a) = Text(x,y,s,fs,a,0,0,0);
 function draw_graphic(file::GraphicsOutput, txt::Text, t::Transform)
     draw_text(file, t(txt.x, txt.y) .- (txt.xoffset, txt.yoffset), txt.s, txt.fontsize, txt.align, txt.rot*180/pi);
 end
+function vertical_align!(t::Text)
+    t.yoffset += t.fontsize/2;
+end
 
 
 function add_labels(g::GraphicPart, xlabel::String, ylabel::String)

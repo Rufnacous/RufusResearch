@@ -179,9 +179,14 @@ end
 
 
 function schematic()
-    fig = Graphic(2,1);
-    box1 = fig( Box(0.05, 0.05, 0.9, 0.4));
-    box2 = fig( Box(0.05, 0.525, 0.9, 0.4));
+    fig = Graphic(2000,1000);
+    box0 = fig(Box(0,0,1,1));
+    margin = 15 / fig.height;
+    box1 = fig( Box(fig.height*margin/fig.width, margin, (fig.height*(1-3margin)/2fig.width), (1-3margin)/2));
+    box2 = fig( Box(fig.height*margin/fig.width, 2margin + (1-3margin)/2, box1.width, (1-3margin)/2));
+
+    vertical_align!(box2(Text(0.5,0.5,"SUBJECT",50,:center)));
+    vertical_align!(box1(Text(0.5,0.5,"FLUID",50,:center)));
     
 
 
