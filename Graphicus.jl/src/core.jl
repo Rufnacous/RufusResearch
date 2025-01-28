@@ -1,3 +1,9 @@
+macro writesprintf(file, format, args...)
+    quote
+        write($(esc(file)), @sprintf($(string(format)), $(esc.(args)...)))
+    end
+end
+
 
 abstract type GraphicPart end;
 abstract type GraphicsOutput end;
