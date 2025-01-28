@@ -8,6 +8,7 @@ mutable struct Axis <: GraphicPart
     parts::Array{GraphicPart}
 end
 Axis() = Axis(0,0,1,1,(0.0,1.0),(0.0,1.0),[])
+BoxedAxis(args...) = Box(args...)(axis);
 Axis(x,y,w,h) = Axis(x,y,w,h,(0.0,1.0),(0.0,1.0),[])
 
 function draw_graphic_traverse(o::GraphicsOutput, g::Axis, t::Transform)
