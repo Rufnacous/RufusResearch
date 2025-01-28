@@ -6,6 +6,7 @@ module Graphicus
     include("graphics.jl");
     include("axis.jl");
     include("eps.jl");
+    include("svg.jl");
 
     
 function test_lims()
@@ -120,6 +121,22 @@ function superscatter_test()
     lg = ax(LineGraph(xs, ys, 2));
     
     save_to_eps("example.eps", fig);
+    return
+end
+
+function svgtest()
+    fig = Graphic(500, 250);
+    box = fig( Box(0.01, 0.01, 0.98,0.98));
+    ax = box( Axis(0.0, 0.0, 1.0, 1.0));
+    ax.xlim = (-pi,pi)
+    ax.ylim = (-1,1)
+    xs = collect(LinRange(-pi, pi, 40));
+    ys = sin.(xs);
+    ax(Scatter(xs, ys, SquarePoint(5, true)));
+
+    box(Text(0.5,0.5,"Text test",50,:center))
+    
+    save_to_svg("example.svg", fig);
     return
 end
 
