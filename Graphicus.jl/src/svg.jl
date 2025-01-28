@@ -14,7 +14,7 @@ function save_to_svg(filepath::String, g::Graphic)
         # # write(file, "/Times-Roman findfont 48 scalefont setfont\n");
         # @writesprintf(file, "%%%%BeginResource: font CMUSerif-Bold\n%s\n%%%%EndResource\n", fontpfa)
         # write(file, "/CMUConcrete-Roman findfont 48 scalefont setfont\n");
-        draw_graphic_traverse(svgfile, g, Identity()); #0, 0, 1, 1
+        draw_graphic_traverse(svgfile, g, UpsideDown(g.height)); #0, 0, 1, 1
 
         
         write(file,"</svg>")

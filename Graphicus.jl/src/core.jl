@@ -67,6 +67,15 @@ function (transform::Identity)(x::Number, y::Number)
     return x, y
 end
 
+struct UpsideDown <: Transform
+    sdf::SDF
+    c::Number
+end
+UpsideDown(c) = UpsideDown(BorderlessSDF(),c);
+function (transform::UpsideDown)(x::Number, y::Number)
+    return x, transform.c-y
+end
+
 mutable struct Translate <: Transform
     sdf::SDF
     x::Number

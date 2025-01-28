@@ -2,8 +2,8 @@ struct EPS_File <: GraphicsOutput
     stream::IOStream
 end
 write(f::EPS_File, args...; kwargs...) = write(f.stream, args...; kwargs...);
-function save_to_eps(filepath::String, g::Graphic)
-    fontpfa = read_pfa_file("../Graphicus.jl/fonts/cmunorm.pfa");
+function save_to_eps(filepath::String, g::Graphic; fontfilepath::String="../Graphicus.jl/fonts/cmunorm.pfa")
+    fontpfa = read_pfa_file(fontfilepath);
     
     open(filepath, "w") do file
         epsfile = EPS_File(file);
