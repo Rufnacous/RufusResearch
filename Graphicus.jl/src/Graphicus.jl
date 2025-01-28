@@ -8,7 +8,7 @@ module Graphicus
     include("eps.jl");
     include("svg.jl");
 
-    export Graphic, Box, Axis, BoxedAxis, Scatter, LineGraph;
+    export Graphic, Box, Axis, LogAxis, BoxedAxis, BoxedLogAxis, Scatter, LineGraph;
     export save_to_eps, save_to_svg;
 
     
