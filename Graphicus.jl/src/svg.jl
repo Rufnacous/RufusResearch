@@ -9,7 +9,7 @@ function save_to_svg(filepath::String, g::Graphic)
         svgfile = SVG_File(file);
 
         # write(file, @sprintf("<svg height=\"%.2f\" width=\"%.2f\">",g.width, g.height ))
-        @writesprintf(file, "<svg height=\"%.2f\" width=\"%.2f\" xmlns=\"http://www.w3.org/2000/svg\">", g.height, g.width);
+        @writesprintf(file, "<svg height=\"%.2f\" width=\"%.2f\" xmlns=\"http://www.w3.org/2000/svg\">\n", g.height, g.width);
 
         # # write(file, "/Times-Roman findfont 48 scalefont setfont\n");
         # @writesprintf(file, "%%%%BeginResource: font CMUSerif-Bold\n%s\n%%%%EndResource\n", fontpfa)
