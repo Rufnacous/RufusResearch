@@ -8,6 +8,9 @@ module Graphicus
     include("eps.jl");
     include("svg.jl");
 
+    export Graphic, Box, Axis, Scatter, LineGraph;
+    export save_to_eps, save_to_svg;
+
     
 function test_lims()
     
