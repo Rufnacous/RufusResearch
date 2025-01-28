@@ -66,12 +66,12 @@ SpecialLogAxis() = SpecialLogAxis(0,0,1,1,(0.0,1.0),(0.0,1.0),[])
 SpecialLogAxis(x,y,w,h) = SpecialLogAxis(x,y,w,h,(0.0,1.0),(0.0,1.0),[])
 
 function draw_graphic_traverse(o::GraphicsOutput, g::SpecialLogAxis, t::Transform)
-    xwidth = g.xlim[2] - g.xlim[1];
+    xwidth = log(10, g.xlim[2] / g.xlim[1]);
     
     ywidth = speciallogfunc( g.ylim[2] ) - speciallogfunc( g.ylim[1]);
 
     m = ( g.width/xwidth, g.height/ywidth )
-    c = ( g.x - (m[1]*g.xlim[1]), g.y - (m[2]*speciallogfunc(g.ylim[1])) )
+    c = ( g.x - (m[1]*log(10, g.xlim[1])), g.y - (m[2]*speciallogfunc(g.ylim[1])) )
 
     inner_t = t(SpecialLogAffine(BoxSDF(g), c, m));
 
@@ -101,7 +101,7 @@ end
 add_axis_lines(ax::Axis) = ax(AxisLines(ax, 1));
 
 mutable struct ManualAxisTicks <: GraphicPart
-    parent_axis::Axis
+    parent_axis #::Axis
     linewidth::Number
     tickheight::Number
     xticks::Vector{<: Number}
@@ -119,8 +119,12 @@ function draw_graphic(file::GraphicsOutput, ticks::ManualAxisTicks, t::Transform
         #     y1 = 0;
         #     y2 = ticks.tickheight;
         # end
+        
+        tickstart = t(tx, ax.ylim[1]);        
+        tickend = tickstart .+ rotate(t, (tx, ax.ylim[1]), (0,ticks.tickheight));
+
         draw_multiline(file,  [
-            t(tx, ax.ylim[1]), t(tx, ax.ylim[1]) .+ (0, ticks.tickheight)
+            tickstart, tickend
         ], ticks.linewidth, (0,0,0));
     end
     
@@ -132,24 +136,50 @@ function draw_graphic(file::GraphicsOutput, ticks::ManualAxisTicks, t::Transform
         #     x1 = ax.xlim[1];
         #     x2 = ticks.tickheight;
         # end
-        
+
+        tickstart = t(ax.xlim[1],ty);
+        tickend = tickstart .+ rotate(t, (ax.xlim[1],ty), (ticks.tickheight,0));
         draw_multiline(file,  [ 
-            t(ax.xlim[1], ty), t(ax.xlim[1], ty) .+ (ticks.tickheight, 0) 
+            t(ax.xlim[1],ty), tickend
             ], ticks.linewidth, (0,0,0));
     end
 
 end
 function add_axis_ticks(ax::Axis, xgap::Number, ygap::Number)
-
-    x1 = floor(ax.xlim[1] / xgap) * xgap;
-    y1 = floor(ax.ylim[1] / ygap) * ygap;
-
+    x1 = ceil(ax.xlim[1] / xgap) * xgap;
+    y1 = ceil(ax.ylim[1] / ygap) * ygap;
     return ax(ManualAxisTicks(ax, 1, 10, collect(x1:xgap:ax.xlim[2]), collect(y1:ygap:ax.ylim[2]), (:left, :bottom)))
+end
+function add_axis_ticks(ax::LogAxis)
+
+    x1 = 10 ^ ceil(log(10,ax.xlim[1]))
+    y1 = 10 ^ ceil(log(10,ax.ylim[1]))
+    
+    xs = 10 .^ collect(log(10,x1):1:log(10,ax.xlim[2]+0.0000001))
+    ys = 10 .^ collect(log(10,y1):1:log(10,ax.ylim[2]+0.0000001))
+
+    a1 = ax(ManualAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom)));
+    for m = 0.1:0.1:0.9
+        a2 = ax(ManualAxisTicks(ax, 1, 10, m*xs, m*ys, (:left, :bottom)));
+        a2.tickheight *= m
+    end
+
+    return a1
+end
+function add_axis_ticks(ax::SpecialLogAxis, ygap::Number)
+    x1 = 10 ^ ceil(log(10,ax.xlim[1]))
+    xs = 10 .^ collect(log(10,x1):1:log(10,ax.xlim[2]))
+
+    y1 = ceil(ax.ylim[1] / ygap) * ygap;
+    ys = collect(y1:ygap:ax.ylim[2]);
+    
+
+    return ax(ManualAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom)))
 end
 
 
 mutable struct SuperAxisTicks <: GraphicPart
-    parent_axis::Axis
+    parent_axis #::Axis
     linewidth::Number
     tickheight::Number
     xticks::Vector{<: Number}
@@ -178,7 +208,7 @@ function draw_graphic_traverse(o::GraphicsOutput, ticks::SuperAxisTicks, t::Tran
 
 end
 
-function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number)
+function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number; x::Bool=true, y::Bool=true)
 
     x1 = ceil(ax.xlim[1] / xgap) * xgap;
     y1 = ceil(ax.ylim[1] / ygap) * ygap;
@@ -192,6 +222,62 @@ function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number)
         Graphicus.Text(0, 0, @sprintf("%.2f", yt), 22, :center, 38, 5, 0) 
         for yt in ys
     ]
+    if !x
+        xs = [0][2:end];
+    end
+    if !y
+        ys = [0][2:end];
+    end
+    return ax(SuperAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom), xnums, ynums,x,y))
+end
+function add_axis_numbers(ax::LogAxis; x::Bool=true, y::Bool=true)
+
+    x1 = 10 ^ ceil(log(10,ax.xlim[1])-0.0000001)
+    y1 = 10 ^ ceil(log(10,ax.ylim[1])-0.0000001)
+    
+    xs = 10 .^ collect(log(10,x1):1:log(10,ax.xlim[2]+0.0000001))
+    ys = 10 .^ collect(log(10,y1):1:log(10,ax.ylim[2]+0.0000001))
+
+
+    xnums = [
+        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,xt)), 22, :center, 0, 25, 0) 
+        for xt in xs
+    ]
+    ynums = [
+        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,yt)), 22, :center, 38, 5, 0) 
+        for yt in ys
+    ]
+    if !x
+        xs = [0][2:end];
+    end
+    if !y
+        ys = [0][2:end];
+    end
+    return ax(SuperAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom), xnums, ynums))
+end
+function add_axis_numbers(ax::SpecialLogAxis, ygap::Number; x::Bool=true, y::Bool=true)
+
+    x1 = 10 ^ ceil(log(10,ax.xlim[1])-0.0000001)
+    xs = 10 .^ collect(log(10,x1):1:log(10,ax.xlim[2]+0.0000001))
+    
+    y1 = ceil(ax.ylim[1] / ygap) * ygap;
+    ys = collect(y1:ygap:ax.ylim[2]);
+
+
+    xnums = [
+        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,xt)), 22, :center, 0, 25, 0) 
+        for xt in xs
+    ]
+    ynums = [
+        Graphicus.Text(0, 0, @sprintf("%.2f", yt), 22, :center, 38, 5, 0) 
+        for yt in ys
+    ]
+    if !x
+        xs = [0][2:end];
+    end
+    if !y
+        ys = [0][2:end];
+    end
     return ax(SuperAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom), xnums, ynums))
 end
 
@@ -272,14 +358,20 @@ mutable struct Axis3D <: GraphicPart
     xlim::Tuple{Number,Number}
     ylim::Tuple{Number,Number}
     zlim::Tuple{Number,Number}
+    origin::Tuple{Number, Number}
     parts::Array{GraphicPart}
 end
-Axis3D(x,y,w,h) = Axis3D(x,y,w,h,OrthogonalCamera(-pi/4, pi/4,0.1),(0.0,1.0),(0.0,1.0),(0.0,1.0),[]);
+Axis3D() = Axis3D(0,0,1,1)
+Axis3D(x,y,w,h) = Axis3D(x,y,w,h,OrthogonalCamera(-pi/4, pi/4,0.1),(0.0,1.0),(0.0,1.0),(0.0,1.0),(0,0),[]);
 
 function draw_graphic_traverse(o::GraphicsOutput, g::Axis3D, t::Transform)
+
+    # xwidth = g.xlim[2] - g.xlim[1]; ywidth = g.ylim[2] - g.ylim[1];
+
+    # inner_t = t(Affine(BoxSDF(g), (g.x - (g.xlim[1]*g.width/xwidth), g.y - (g.ylim[1]*g.height/ywidth)), (g.width/xwidth, g.height/ywidth)));
     
     [draw_graphic_traverse(o, p,
-        t(Affine((g.x, g.y), (g.width, -g.height))(g.projection))
+        t(Affine((g.x + (g.origin[1]*g.width), g.y + (g.origin[2]*g.height)), (g.width, -g.height))(g.projection))
         # (x,y,z) -> transform( 
         #     g.x + project((x,y,z), g.projection)[1]*g.width,
         #     g.y - project((x,y,z), g.projection)[2]*g.height     )

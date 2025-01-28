@@ -40,7 +40,6 @@ end
 
 
 
-
     
 abstract type Transform end;
     
@@ -105,6 +104,7 @@ function (transform::Affine)(x::Number, y::Number)
     return (transform.c[1] + transform.m[1]*x, transform.c[2] + transform.m[2]*y)
 end
 
+
 mutable struct LogarithmicAffine <: Transform
     sdf::SDF
     c::Tuple{Number, Number}
@@ -123,7 +123,7 @@ mutable struct SpecialLogAffine <: Transform
 end
 SpecialLogAffine(c::Tuple{Number, Number}, m::Tuple{Number, Number}) = SpecialLogAffine(BorderlessSDF(), c, m);
 function (transform::SpecialLogAffine)(x::Number, y::Number)
-    return (transform.c[1] + transform.m[1]*x, transform.c[2] + transform.m[2]*speciallogfunc(y))
+    return (transform.c[1] + transform.m[1]*log(10,x), transform.c[2] + transform.m[2]*speciallogfunc(y))
 end
 
 function speciallogfunc(x)
@@ -239,4 +239,13 @@ function interpolate_and_transform_series(t::Transform, xys; density::Integer = 
     end
     push!(new_xys, t(xys[end]...));
     return new_xys;
+end
+
+
+function rotate(t::Transform, xy_o::Tuple{Number, Number}, xy::Tuple{Number, Number})
+    ex = t(((0.001,0) .+ xy_o)...) .- t(xy_o...);
+    ex = ex ./ sqrt(sum(ex.^2))
+    ey = t(((0,0.001) .+ xy_o)...) .- t(xy_o...);
+    ey = ey ./ sqrt(sum(ey.^2))
+    return (([ex[1] ey[1]; ex[2] ey[2]] * [xy...])...,)
 end

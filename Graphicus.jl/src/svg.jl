@@ -30,7 +30,7 @@ function draw_multiline(file::SVG_File, xys::Vector{Tuple{N, N}}, linewidth::Num
     for i = 2:length(xys)
         @writesprintf(file, " %.2f,%.2f", xys[i][1], xys[i][2])
     end
-    color_string = @sprintf("rgb(%.2f,%.2f,%.2f)", color...);
+    color_string = @sprintf("rgb(%.2f,%.2f,%.2f)", (255 .* color)...);
     fill = "none"
     if filled
         fill = color_string;
@@ -54,7 +54,11 @@ function draw_point(file::SVG_File, xy::Tuple{N, N}, pointsize::Number; filled::
 end
 
 function draw_text(file::SVG_File, xy::Tuple{N, N}, text::String, fontsize::Number, alignment::Symbol, rotation::Number) where N <: Number
-    write(file, @sprintf("<text x=\"%.2f\" y=\"%.2f\" fill=\"black\">%s</text>",xy[1],xy[2],text))
+    xalign = 0;
+    if alignment == :center
+        xalign = -15;
+    end
+    write(file, @sprintf("<text x=\"%.2f\" y=\"%.2f\" dx=\"%.2f\" fill=\"black\" font-size=\"%.2f\">%s</text>",xy[1],xy[2],xalign,fontsize,text))
 
     # @writesprintf(file, "/CMUConcrete-Roman findfont %.2f scalefont setfont\n",fontsize)
     # write(file, "gsave\n");
