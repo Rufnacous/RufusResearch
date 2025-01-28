@@ -12,7 +12,7 @@ function save_to_svg(filepath::String, g::Graphic)
         @writesprintf(file, "<svg height=\"%.2f\" width=\"%.2f\" xmlns=\"http://www.w3.org/2000/svg\">", g.height, g.width);
 
         # # write(file, "/Times-Roman findfont 48 scalefont setfont\n");
-        # write(file, @sprintf("%%%%BeginResource: font CMUSerif-Bold\n%s\n%%%%EndResource\n", fontpfa));
+        # @writesprintf(file, "%%%%BeginResource: font CMUSerif-Bold\n%s\n%%%%EndResource\n", fontpfa)
         # write(file, "/CMUConcrete-Roman findfont 48 scalefont setfont\n");
         draw_graphic_traverse(svgfile, g, Identity()); #0, 0, 1, 1
 
@@ -26,9 +26,9 @@ end
 function draw_multiline(file::SVG_File, xys::Vector{Tuple{N, N}}, linewidth::Number, color::Tuple{Number, Number, Number}; filled::Bool=false, linestyle::Symbol=:solid) where N <: Number
 
     write(file, "<polyline points=\"");
-    write(file, @sprintf("%.2f,%.2f", xys[1][1], xys[1][2]));
+    @writesprintf(file, "%.2f,%.2f", xys[1][1], xys[1][2])
     for i = 2:length(xys)
-        write(file, @sprintf(" %.2f,%.2f", xys[i][1], xys[i][2]));
+        @writesprintf(file, " %.2f,%.2f", xys[i][1], xys[i][2])
     end
     color_string = @sprintf("rgb(%.2f,%.2f,%.2f)", color...);
     fill = "none"
@@ -39,7 +39,7 @@ function draw_multiline(file::SVG_File, xys::Vector{Tuple{N, N}}, linewidth::Num
     if linestyle == :dashed
         dasharray = @sprintf("%d,%d",2linewidth,2linewidth);
     end
-    write(file, @sprintf("\" style=\"fill:%s;stroke:%s;stroke-width:%.2f;stroke-dasharray:%s\"/>\n",fill,color_string,linewidth,dasharray));
+    @writesprintf(file, "\" style=\"fill:%s;stroke:%s;stroke-width:%.2f;stroke-dasharray:%s\"/>\n",fill,color_string,linewidth,dasharray)
 
 end
 
@@ -56,9 +56,9 @@ end
 function draw_text(file::SVG_File, xy::Tuple{N, N}, text::String, fontsize::Number, alignment::Symbol, rotation::Number) where N <: Number
     write(file, @sprintf("<text x=\"%.2f\" y=\"%.2f\" fill=\"black\">%s</text>",xy[1],xy[2],text))
 
-    # write(file, @sprintf("/CMUConcrete-Roman findfont %.2f scalefont setfont\n",fontsize));
+    # @writesprintf(file, "/CMUConcrete-Roman findfont %.2f scalefont setfont\n",fontsize)
     # write(file, "gsave\n");
-    # write(file, @sprintf("%.2f %.2f translate\n%.2f rotate\n",xy[1],xy[2],rotation));
+    # @writesprintf(file, "%.2f %.2f translate\n%.2f rotate\n",xy[1],xy[2],rotation)
     # if alignment == :center
     #     write(file, @sprintf("(%s) stringwidth pop\n2 div neg 0 translate\n", text))
     # end
