@@ -188,19 +188,38 @@ function (g_parent::GraphicPart)(g_child::GraphicPart)
     try
         g_parent.parts
     catch
-        throw(ErrorException(@sprintf("Append graphic not implemented for type %s",typeof(g_child))))
+        throw(ErrorException(@sprintf("Append graphic not implemented for type %s",typeof(g_parent))))
     end
 
     push!(g_parent.parts, g_child)
     return g_child;
 end
 
+struct GraphicSum
+    graphics::Vector{GraphicPart}
+end
+function (g_parent::GraphicPart)(g_children::GraphicSum)
+    try
+        g_parent.parts
+    catch
+        throw(ErrorException(@sprintf("Append graphic not implemented for type %s",typeof(g_parent))))
+    end
 
-
-
-
-
-
+    append!(g_parent.parts, g_children.graphics)
+    return g_children.graphics;
+end
+function Base.:(+)(g1::GraphicPart, g2::GraphicPart)
+    return GraphicSum([g1,g2])
+end
+function Base.:(+)(g1::GraphicPart, gs::GraphicSum)
+    return GraphicSum([g1, gs.graphics...])
+end
+function Base.:(+)(gs::GraphicSum, g2::GraphicPart)
+    return GraphicSum([gs.graphics...,g2])
+end
+function Base.:(+)(gs1::GraphicSum, gs2::GraphicSum)
+    return GraphicSum([gs1.graphics...,gs2.graphics...])
+end
 
 
 

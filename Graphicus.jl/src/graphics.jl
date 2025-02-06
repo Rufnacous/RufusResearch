@@ -251,11 +251,12 @@ mutable struct Multiline3D <: GraphicPart
     linewidth::Number
     color::Tuple{Number, Number, Number}
     linestyle::Symbol
+    filled::Bool
 end
-Multiline3D(xs,ys,zs,lw) = Multiline3D(xs,ys,zs,lw, (0,0,0),:solid);
+Multiline3D(xs,ys,zs,lw) = Multiline3D(xs,ys,zs,lw, (0,0,0),:solid,false);
 
 function draw_graphic(file::GraphicsOutput, line::Multiline3D, t::Transform)
-    draw_multiline(file, [t(line.xs[i], line.ys[i], line.zs[i]) for i in eachindex(line.xs)], line.linewidth, line.color, linestyle=line.linestyle)
+    draw_multiline(file, [t(line.xs[i], line.ys[i], line.zs[i]) for i in eachindex(line.xs)], line.linewidth, line.color, linestyle=line.linestyle,filled=line.filled)
 end
 
 
