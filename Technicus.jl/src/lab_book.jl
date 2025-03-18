@@ -60,6 +60,9 @@ function new_run(book::LabBook)
     mkpath(get_book_path(book,@sprintf("run_%03d",runnumber)));
     return @sprintf("run_%03d",runnumber);
 end
+function new_run_named(book::LabBook, name::String)
+    mkpath(get_book_path(book,name));
+end
 
 function get_book_path(book::LabBook, args...)
     return joinpath(book.project.folderpath, book.name, args...);
@@ -68,7 +71,7 @@ function get_book_path(run::LabRun, args...)
     return get_book_path(run.lab_book, run.run_name, args...);
 end
 
-function open_lab_book(f::Function, book::LabBook; catch_me=false)
+function open_lab_book(f::Function, book::LabBook; catch_me=false, name="")
     completelynew = !isfile(get_book_path(book, "lab_book.md"));
     book_io = open(get_book_path(book, "lab_book.md"),"a+");
     errored = false;
@@ -76,10 +79,18 @@ function open_lab_book(f::Function, book::LabBook; catch_me=false)
         if completelynew
             println(book_io, "# ",book.name);
         end
-        labrun = LabRun(
-            book,
-            book_io,
-            new_run(book) );
+        if name == ""
+            labrun = LabRun(
+                book,
+                book_io,
+                new_run(book) );
+        else
+            new_run_named(book, name)
+            labrun = LabRun(
+                book,
+                book_io,
+                name );
+        end
         seekend(labrun.book_io);
         println(labrun, "\n## ", labrun.run_name, " ",now())
         f(labrun);
