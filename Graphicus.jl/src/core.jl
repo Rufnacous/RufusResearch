@@ -220,7 +220,7 @@ end
 function Base.:(+)(gs1::GraphicSum, gs2::GraphicSum)
     return GraphicSum([gs1.graphics...,gs2.graphics...])
 end
-
+Base.getindex(gs::GraphicSum, i) = gs.graphics[i];
 
 
 struct Graphic <: GraphicPart

@@ -97,7 +97,38 @@ mutable struct Box <: GraphicPart
     interpolated::Integer
 end
 Box(x,y,w,h) = Box(x,y,w,h,[], 1.0, false, 0)
+function Boxes(x,y,w,h, nw::Integer, nh::Integer; wspacing=0, hspacing=0,borderless=false)
+
+    wspacing_ = ifelse(nw>1,wspacing / (nw-1),0)
+    hspacing_ = ifelse(nh>1,hspacing / (nh-1),0)
+
+    ws = [((1 - (wspacing_*(nw-1))) / nw) for i = 1:nw]
+    hs = [((1 - (hspacing_*(nh-1))) / nh) for i = 1:nh]
+    return Boxes(x,y,w,h, ws, hs, wspacing=wspacing, hspacing=hspacing, borderless=borderless)
+
+end
+function Boxes(x,y,w,h, widths::AbstractArray{<:Number}, heights::AbstractArray{<:Number}; wspacing=0, hspacing=0, borderless=false)
+    nw = length(widths); nh = length(heights)
+
+    boxes = GraphicSum([]);
+
+    wspacing = ifelse(nw>1,wspacing / (nw-1),0)
+    hspacing = ifelse(nh>1,hspacing / (nh-1),0)
+
+    btype = ifelse(borderless, BorderlessBox, Box);
+
+    for coli = 1:nw, rowi = nh:-1:1
+        boxes += btype(
+            x + sum(w .* widths[1:(coli-1)]) + (coli-1)*wspacing,
+            y + sum(h .* heights[1:(rowi-1)]) + (rowi-1)*hspacing,
+            w*widths[coli],h*heights[rowi]
+        )
+    end
+    return boxes
+
+end
 function draw_graphic(file::GraphicsOutput, box::Box, t::Transform)
+    
     xys = [
         (box.x, box.y),
         (box.x, box.y+box.height),
@@ -105,6 +136,7 @@ function draw_graphic(file::GraphicsOutput, box::Box, t::Transform)
         (box.x+box.width, box.y),
         (box.x, box.y)
     ];
+
     if box.interpolated == 0
         draw_multiline(file, transform_series(t, xys), box.linewidth, (0,0,0), filled=box.filled);
     else
