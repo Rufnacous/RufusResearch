@@ -152,6 +152,10 @@ function add_axis_ticks(ax::Axis, xgap::Number, ygap::Number)
 end
 function add_axis_ticks(ax::LogAxis)
 
+    if any([ax.xlim..., ax.ylim...] .<= 0)
+        throw(InexactError("Error generating ticks. Have you set nonzero, positive lims yet?"))
+    end
+
     x1 = 10 ^ ceil(log(10,ax.xlim[1]))
     y1 = 10 ^ ceil(log(10,ax.ylim[1]))
     

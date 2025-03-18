@@ -251,11 +251,65 @@ mutable struct Multiline3D <: GraphicPart
     linewidth::Number
     color::Tuple{Number, Number, Number}
     linestyle::Symbol
+    filled::Bool
 end
-Multiline3D(xs,ys,zs,lw) = Multiline3D(xs,ys,zs,lw, (0,0,0),:solid);
+Multiline3D(xs,ys,zs,lw) = Multiline3D(xs,ys,zs,lw, (0,0,0),:solid,false);
 
 function draw_graphic(file::GraphicsOutput, line::Multiline3D, t::Transform)
-    draw_multiline(file, [t(line.xs[i], line.ys[i], line.zs[i]) for i in eachindex(line.xs)], line.linewidth, line.color, linestyle=line.linestyle)
+    draw_multiline(file, [t(line.xs[i], line.ys[i], line.zs[i]) for i in eachindex(line.xs)], line.linewidth, line.color, linestyle=line.linestyle,filled=line.filled)
 end
 
 
+
+
+
+
+mutable struct Heatmap <: GraphicPart
+    xs::Array{Number}
+    ys::Array{Number}
+    cs::Matrix{Number}
+    colormap::Function
+end
+Heatmap(cs) = Heatmap(LinRange(0,1,size(cs,1)), LinRange(0,1,size(cs,2)), cs, (c)->(c,c,c))
+Heatmap(xs,ys,cs) = Heatmap(xs,ys,cs,(c) -> (c,c,c))
+function draw_graphic(file::GraphicsOutput, hm::Heatmap, t::Transform)
+    xborders = (hm.xs[2:end] + hm.xs[1:end-1]) ./ 2
+    x0 = hm.xs[1]-(xborders[1]-hm.xs[1]);
+    xend = hm.xs[end]+(hm.xs[end]-xborders[end]);
+    xborders = [x0, xborders..., xend];
+    
+    yborders = (hm.ys[2:end] + hm.ys[1:end-1]) ./ 2
+    y0 = hm.ys[1]-(yborders[1]-hm.ys[1]);
+    yend = hm.ys[end]+(hm.ys[end]-yborders[end]);
+    yborders = [y0, yborders..., yend];
+
+    for xi in eachindex(hm.xs), yi in eachindex(hm.ys)
+        xl = xborders[xi]; xr = xborders[xi+1];
+        yb = yborders[yi]; yt = yborders[yi+1];
+        if xi < length(hm.xs)
+            xr = (xborders[xi+1] + xborders[xi+2])/2;
+        end
+        if yi < length(hm.ys)
+            yt = (yborders[yi+1] + yborders[yi+2])/2;
+        end
+        boxcolor = hm.colormap(hm.cs[xi,yi])
+        boxcorners = [t(x,y) for (x,y) in [
+            (xl,yb),
+            (xr,yb),
+            (xr,yt),
+            (xl,yt)
+        ]]
+        draw_multiline(file, boxcorners, 0, boxcolor, filled=true)
+    end
+
+
+
+    # for p_i in 1:length(scatter.xs)
+        
+    #     xy = t(scatter.xs[p_i], scatter.ys[p_i]);
+    #     if t[xy...] > 0
+    #         continue
+    #     end
+    #     draw_point(file, xy, scatter.pointsize, filled=scatter.filled)
+    # end
+end

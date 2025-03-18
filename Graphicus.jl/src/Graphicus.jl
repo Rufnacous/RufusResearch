@@ -29,6 +29,24 @@ function test_lims()
 
 end
 
+function test_colormap()
+    
+    fig = Graphic(1500, 1500);
+    bx1 = fig(Box(0.5, 0.5, 0.5, 0.5));
+
+    ax = bx1(PolarAxis());
+    xs = LinRange(0,1,100);
+    ys = LinRange(0,2pi,100);
+    cs = zeros(length(xs), length(ys));
+    for xi in eachindex(xs), yi in eachindex(ys)
+        cs[xi,yi] = xs[xi] * (ys[yi]^2)
+    end
+    hmp = ax(Heatmap(xs, ys, cs));
+
+    save_to_eps("example_hmp.eps", fig);
+
+end
+
 function test_polar()
     fig = Graphic(1000,1000);
     circ = fig( Circle(0.5,0.5, 0.5) );

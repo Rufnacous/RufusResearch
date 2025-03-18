@@ -23,7 +23,7 @@ function save_to_svg(filepath::String, g::Graphic)
     return
 end
 
-function draw_multiline(file::SVG_File, xys::Vector{Tuple{N, N}}, linewidth::Number, color::Tuple{Number, Number, Number}; filled::Bool=false, linestyle::Symbol=:solid) where N <: Number
+function draw_multiline(file::SVG_File, xys::AbstractArray{Tuple{N, N1}}, linewidth::Number, color::Tuple{Number, Number, Number}; filled::Bool=false, linestyle::Symbol=:solid) where N <: Number where N1 <: Number
 
     write(file, "<polyline points=\"");
     @writesprintf(file, "%.2f,%.2f", xys[1][1], xys[1][2])
