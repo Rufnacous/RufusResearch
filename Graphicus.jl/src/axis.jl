@@ -13,7 +13,13 @@ Axis(x,y,w,h) = Axis(x,y,w,h,(0.0,1.0),(0.0,1.0),[])
 function draw_graphic_traverse(o::GraphicsOutput, g::Axis, t::Transform)
     xwidth = g.xlim[2] - g.xlim[1]; ywidth = g.ylim[2] - g.ylim[1];
 
-    inner_t = t(Affine(BoxSDF(g), (g.x - (g.xlim[1]*g.width/xwidth), g.y - (g.ylim[1]*g.height/ywidth)), (g.width/xwidth, g.height/ywidth)));
+    inner_t = t(
+        Affine(
+            BoxSDF(g),
+            (g.x - (g.xlim[1]*g.width/xwidth), g.y - (g.ylim[1]*g.height/ywidth)),
+            (g.width/xwidth, g.height/ywidth)
+            )
+        );
 
     [draw_graphic_traverse(o, p, inner_t) for p in g.parts]
 end

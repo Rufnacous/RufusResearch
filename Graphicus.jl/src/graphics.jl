@@ -18,8 +18,8 @@ function vertical_align!(t::Text)
 end
 
 
-function add_labels(g::GraphicPart, xlabel::String, ylabel::String)
-    return (g(Text(0.5, 0, xlabel, 30, :center,0,60,0)), g(Text(0, 0.5, ylabel, 30, :center, 60, 0, pi/2)))
+function add_labels(g::GraphicPart, xlabel::String, ylabel::String; fontsize::Number=30, xlabeloffset::Number=60, ylabeloffset::Number=60)
+    return (g(Text(0.5, 0, xlabel, fontsize, :center,0,xlabeloffset,0)), g(Text(0, 0.5, ylabel, fontsize, :center, ylabeloffset, 0, pi/2)))
 end
 
 mutable struct Multiline <: GraphicPart
@@ -179,9 +179,9 @@ mutable struct Point <: GraphicPart
 end
 function draw_graphic(file::GraphicsOutput, p::Point, t::Transform)
     xy = t(p.x, p.y);
-    if t[xy...] > 0
-        return
-    end
+    # if t[xy...] > 0
+    #     return
+    # end
     draw_point(file, xy, p.pointsize, filled=p.filled)
 end
 
@@ -190,6 +190,7 @@ mutable struct TrianglePoint <: GraphicPart
     filled::Bool
 end
 function draw_graphic(file::GraphicsOutput, p::TrianglePoint, t::Transform)
+    println("  ",t(0,0))
     draw_multiline(file, [t(0,0) .+ (xy[1],xy[2]) for xy in [
         (0, 1.5p.size/sqrt(3)),
         (-1.5p.size/2, -1.5p.size/2sqrt(3)),

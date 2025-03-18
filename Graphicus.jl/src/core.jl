@@ -153,7 +153,7 @@ function (box::BoxSDF)(t::Transform, x::Number, y::Number)
     x2, y2 = t(box.x2, box.y2);
     xmid = 0.5(x1 + x2);
     ymid = 0.5(y1 + y2);
-    return max( 2abs(x - xmid)/(x2 - x1), 2abs(y - ymid)/(y2 - y1) ) - 1;
+    return max( 2abs(x - xmid)/abs(x2 - x1), 2abs(y - ymid)/abs(y2 - y1) ) - 1;
 end
 function (circle::CircleSDF)(t::Transform, x::Number, y::Number)
     xinner, yinner = t(0, 0);

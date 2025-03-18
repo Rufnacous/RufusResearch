@@ -58,7 +58,7 @@ function draw_text(file::SVG_File, xy::Tuple{N, N}, text::String, fontsize::Numb
     if alignment == :center
         xalign = -15;
     end
-    write(file, @sprintf("<text x=\"%.2f\" y=\"%.2f\" dx=\"%.2f\" fill=\"black\" font-size=\"%.2f\">%s</text>",xy[1],xy[2],xalign,fontsize,text))
+    write(file, @sprintf("<text x=\"%.2f\" y=\"%.2f\" dx=\"%.2f\" fill=\"black\" font-size=\"%.2f\" style=\"font-family:'CMU Serif'\">%s</text>",xy[1],xy[2],xalign,fontsize,text))
 
     # @writesprintf(file, "/CMUConcrete-Roman findfont %.2f scalefont setfont\n",fontsize)
     # write(file, "gsave\n");
