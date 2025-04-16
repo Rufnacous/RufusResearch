@@ -59,6 +59,34 @@ end
 
 
 
+mutable struct LogXAxis <: GraphicPart
+    x::Number
+    y::Number
+    width::Number
+    height::Number
+    xlim::Tuple{Number,Number}
+    ylim::Tuple{Number,Number}
+    parts::Array{GraphicPart}
+end
+LogXAxis() = LogXAxis(0,0,1,1,(0.0,1.0),(0.0,1.0),[])
+LogXAxis(x,y,w,h) = LogXAxis(x,y,w,h,(0.0,1.0),(0.0,1.0),[])
+
+function draw_graphic_traverse(o::GraphicsOutput, g::LogXAxis, t::Transform)
+    base = 10;
+    xwidth = log(base, g.xlim[2] / g.xlim[1]); ywidth = g.ylim[2] - g.ylim[1];
+
+    m = ( g.width/xwidth, g.height/ywidth )
+    c = ( g.x - (m[1]*log(base, g.xlim[1])), g.y - (g.ylim[1] * m[2]) )
+    inner_t = t(LogarithmicXAffine(BoxSDF(g), c, m, base));
+
+    [draw_graphic_traverse(o, p, inner_t) for p in g.parts]
+end
+function BoxSDF(a::LogXAxis)
+    return BoxSDF(a.xlim[1], a.ylim[1], a.xlim[2], a.ylim[2]);
+end
+
+
+
 mutable struct SpecialLogAxis <: GraphicPart
     x::Number
     y::Number
@@ -190,11 +218,8 @@ end
 
 mutable struct SuperAxisTicks <: GraphicPart
     parent_axis #::Axis
-    linewidth::Number
-    tickheight::Number
     xticks::Vector{<: Number}
     yticks::Vector{<: Number}
-    align::Tuple{Symbol, Symbol}
     parts_x::Array{GraphicPart}
     parts_y::Array{GraphicPart}
 end
@@ -218,18 +243,20 @@ function draw_graphic_traverse(o::GraphicsOutput, ticks::SuperAxisTicks, t::Tran
 
 end
 
-function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number; x::Bool=true, y::Bool=true)
+function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number;
+    x::Bool=true, y::Bool=true,
+    x_vertical_offset::Number=0, y_horizontal_offset::Number=0)
 
     x1 = ceil(ax.xlim[1] / xgap) * xgap;
     y1 = ceil(ax.ylim[1] / ygap) * ygap;
 
     xs, ys = collect(x1:xgap:ax.xlim[2]), collect(y1:ygap:ax.ylim[2]);
     xnums = [
-        Graphicus.Text(0, 0, @sprintf("%.2f", xt), 22, :center, 0, 25, 0) 
+        Graphicus.Text(0, x_vertical_offset, @sprintf("%.2f", xt), 22, :center, 0, 25, 0) 
         for xt in xs
     ]
     ynums = [
-        Graphicus.Text(0, 0, @sprintf("%.2f", yt), 22, :center, 38, 5, 0) 
+        Graphicus.Text(y_horizontal_offset, 0, @sprintf("%.2f", yt), 22, :right, 38, 5, 0) 
         for yt in ys
     ]
     if !x
@@ -238,23 +265,23 @@ function add_axis_numbers(ax::Axis, xgap::Number, ygap::Number; x::Bool=true, y:
     if !y
         ys = [0][2:end];
     end
-    return ax(SuperAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom), xnums, ynums,x,y))
+    return ax(SuperAxisTicks(ax, xs, ys, xnums, ynums,x,y))
 end
-function add_axis_numbers(ax::LogAxis; x::Bool=true, y::Bool=true)
+
+function add_axis_numbers(ax::LogAxis; x::Bool=true, y::Bool=true, fs::Number=22, x_vertical_offset::Number=0, y_horizontal_offset::Number=0)
 
     x1 = 10 ^ ceil(log(10,ax.xlim[1])-0.0000001)
     y1 = 10 ^ ceil(log(10,ax.ylim[1])-0.0000001)
-    
-    xs = 10 .^ collect(log(10,x1):1:log(10,ax.xlim[2]+0.0000001))
-    ys = 10 .^ collect(log(10,y1):1:log(10,ax.ylim[2]+0.0000001))
+    xs = 10 .^ collect(log(10,x1):1.0:log(10,ax.xlim[2]+0.0000001))
+    ys = 10 .^ collect(log(10,y1):1.0:log(10,ax.ylim[2]+0.0000001))
 
 
     xnums = [
-        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,xt)), 22, :center, 0, 25, 0) 
+        Graphicus.Text(0, x_vertical_offset, @sprintf("10^%d", log(10,xt)), fs, :center, 0, 25, 0) 
         for xt in xs
     ]
     ynums = [
-        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,yt)), 22, :center, 38, 5, 0) 
+        Graphicus.Text(y_horizontal_offset, 0, @sprintf("10^%d", log(10,yt)), fs, :right, 38, 5, 0) 
         for yt in ys
     ]
     if !x
@@ -263,7 +290,7 @@ function add_axis_numbers(ax::LogAxis; x::Bool=true, y::Bool=true)
     if !y
         ys = [0][2:end];
     end
-    return ax(SuperAxisTicks(ax, 1, 10, xs, ys, (:left, :bottom), xnums, ynums))
+    return ax(SuperAxisTicks(ax, xs, ys, xnums, ynums))
 end
 function add_axis_numbers(ax::SpecialLogAxis, ygap::Number; x::Bool=true, y::Bool=true)
 
@@ -275,7 +302,7 @@ function add_axis_numbers(ax::SpecialLogAxis, ygap::Number; x::Bool=true, y::Boo
 
 
     xnums = [
-        Graphicus.Text(0, 0, @sprintf("₁₀%d", log(10,xt)), 22, :center, 0, 25, 0) 
+        Graphicus.Text(0, 0, @sprintf("10^%d", log(10,xt)), 22, :center, 0, 25, 0) 
         for xt in xs
     ]
     ynums = [

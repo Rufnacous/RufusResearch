@@ -17,6 +17,9 @@ function vertical_align!(t::Text)
     t.yoffset += t.fontsize/2;
 end
 
+function add_title(g::GraphicPart, t::String; fontsize::Number=30, offset::Number=-60)
+    return g(Text(0.5, 1, t, fontsize, :center,0,offset,0))
+end
 
 function add_labels(g::GraphicPart, xlabel::String, ylabel::String; fontsize::Number=30, xlabeloffset::Number=60, ylabeloffset::Number=60)
     return (g(Text(0.5, 0, xlabel, fontsize, :center,0,xlabeloffset,0)), g(Text(0, 0.5, ylabel, fontsize, :center, ylabeloffset, 0, pi/2)))
@@ -26,7 +29,7 @@ mutable struct Multiline <: GraphicPart
     xs::Array{Number}
     ys::Array{Number}
     linewidth::Number
-    color::Tuple{Number, Number, Number}
+    color#::Union{Tuple{Number, Number, Number}, Vector{Tuple{Number, Number, Number}}}
     linestyle::Symbol
 end
 Multiline(xs,ys,lw) = Multiline(xs,ys,lw, (0,0,0),:solid);
@@ -335,14 +338,26 @@ function draw_graphic(file::GraphicsOutput, hm::Heatmap, t::Transform)
         draw_multiline(file, boxcorners, 0, boxcolor, filled=true)
     end
 
+end
 
+mutable struct Colorbar <: GraphicPart
+    colormap
+end
 
-    # for p_i in 1:length(scatter.xs)
-        
-    #     xy = t(scatter.xs[p_i], scatter.ys[p_i]);
-    #     if t[xy...] > 0
-    #         continue
-    #     end
-    #     draw_point(file, xy, scatter.pointsize, filled=scatter.filled)
-    # end
+function Colorbar(h::Heatmap)
+    return Colorbar(h.colormap)
+end
+
+function draw_graphic(file::GraphicsOutput, cb::Colorbar, t::Transform)
+    rungs = LinRange(0,1, 100)
+    boxes = [
+        [ t(x,y) for (x,y) in [(0,bottom), (0,top), (1,top), (1,bottom), (0,bottom)] ]
+        for (bottom,top) in
+        [ (rungs[i-1],rungs[i]) for i in 2:length(rungs)]
+    ]
+    cs = LinRange(0,1,length(boxes))
+    for i in eachindex(boxes)
+        box = boxes[i]
+        draw_multiline(file, box, 0, cb.colormap(cs[i]), filled=true)
+    end
 end

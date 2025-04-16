@@ -56,6 +56,11 @@ function draw_multiline(file::EPS_File, xys::Vector{Tuple{N, N}}, linewidth::Num
         write(file, "[] 0 setdash\n");
     end
 end
+function draw_multiline(file::EPS_File, xys::Vector{Tuple{N, N}}, linewidth::Number, color::Vector{Tuple{N, N, N}}; filled::Bool=false, linestyle::Symbol=:solid) where N <: Number
+    for seg_i in eachindex(color)
+        draw_multiline(file, xys[seg_i:seg_i+1, :], linewidth, color[seg_i], filled=filled, linestyle=linestyle)
+    end
+end
 
 function draw_point(file::EPS_File, xy::Tuple{N, N}, pointsize::Number; filled::Bool=true) where N <: Number
     @writesprintf(file, "newpath\n%.2f %.2f %.2f 0 360 arc\nclosepath\n",xy[1],xy[2],pointsize);

@@ -42,6 +42,12 @@ function draw_multiline(file::SVG_File, xys::AbstractArray{Tuple{N, N1}}, linewi
     @writesprintf(file, "\" style=\"fill:%s;stroke:%s;stroke-width:%.2f;stroke-dasharray:%s\"/>\n",fill,color_string,linewidth,dasharray)
 
 end
+function draw_multiline(file::SVG_File, xys::Vector{Tuple{N, N}}, linewidth::Number, color::Vector{Tuple{N, N, N}}; filled::Bool=false, linestyle::Symbol=:solid) where N <: Number
+    println(length(color)," ",length(xys))
+    for seg_i in eachindex(color)
+        draw_multiline(file, xys[seg_i:seg_i+1], linewidth, color[seg_i], filled=filled, linestyle=linestyle)
+    end
+end
 
 
 function draw_point(file::SVG_File, xy::Tuple{N, N}, pointsize::Number; filled::Bool=true) where N <: Number

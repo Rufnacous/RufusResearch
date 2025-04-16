@@ -116,6 +116,17 @@ function (transform::LogarithmicAffine)(x::Number, y::Number)
     return (transform.c[1] + transform.m[1]*log(transform.base[1],x), transform.c[2] + transform.m[2]*log(transform.base[2],y))
 end
 
+mutable struct LogarithmicXAffine <: Transform
+    sdf::SDF
+    c::Tuple{Number, Number}
+    m::Tuple{Number, Number}
+    base::Number
+end
+LogarithmicXAffine(c::Tuple{Number, Number}, m::Tuple{Number, Number}, base::Number) = LogarithmicXAffine(BorderlessSDF(), c, m, base);
+function (transform::LogarithmicXAffine)(x::Number, y::Number)
+    return (transform.c[1] + transform.m[1]*log(transform.base[1],x), transform.c[2] + transform.m[2]*y)
+end
+
 mutable struct SpecialLogAffine <: Transform
     sdf::SDF
     c::Tuple{Number, Number}
