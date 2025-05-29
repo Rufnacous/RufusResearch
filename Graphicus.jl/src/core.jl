@@ -113,7 +113,7 @@ mutable struct LogarithmicAffine <: Transform
 end
 LogarithmicAffine(c::Tuple{Number, Number}, m::Tuple{Number, Number}, base::Tuple{Number, Number}) = LogarithmicAffine(BorderlessSDF(), c, m, base);
 function (transform::LogarithmicAffine)(x::Number, y::Number)
-    return (transform.c[1] + transform.m[1]*log(transform.base[1],x), transform.c[2] + transform.m[2]*log(transform.base[2],y))
+    return (transform.c[1] + transform.m[1]*log(transform.base[1],max(1e-10, x)), transform.c[2] + transform.m[2]*log(transform.base[2],max(1e-10, y)))
 end
 
 mutable struct LogarithmicXAffine <: Transform
@@ -124,7 +124,12 @@ mutable struct LogarithmicXAffine <: Transform
 end
 LogarithmicXAffine(c::Tuple{Number, Number}, m::Tuple{Number, Number}, base::Number) = LogarithmicXAffine(BorderlessSDF(), c, m, base);
 function (transform::LogarithmicXAffine)(x::Number, y::Number)
-    return (transform.c[1] + transform.m[1]*log(transform.base[1],x), transform.c[2] + transform.m[2]*y)
+    
+    unsafelog = -100000
+    if x > 0
+        unsafelog = log(transform.base[1],x)
+    end
+    return (transform.c[1] + transform.m[1]*unsafelog, transform.c[2] + transform.m[2]*y)
 end
 
 mutable struct SpecialLogAffine <: Transform
@@ -159,12 +164,61 @@ end
 function (sdf::BorderlessSDF)(t::Transform, x::Number, y::Number)
     return -1
 end
-function (box::BoxSDF)(t::Transform, x::Number, y::Number)
-    x1, y1 = t(box.x1, box.y1);
-    x2, y2 = t(box.x2, box.y2);
-    xmid = 0.5(x1 + x2);
-    ymid = 0.5(y1 + y2);
-    return max( 2abs(x - xmid)/abs(x2 - x1), 2abs(y - ymid)/abs(y2 - y1) ) - 1;
+function (quad::BoxSDF)(t::Transform, x::Number, y::Number)
+    # Transform the four corners
+    p00 = t(quad.x1, quad.y1)
+    p10 = t(quad.x2, quad.y1)
+    p11 = t(quad.x2, quad.y2)
+    p01 = t(quad.x1, quad.y2)
+
+    # Position of the four points
+    x0, y0 = p00
+    x1, y1 = p10
+    x2, y2 = p11
+    x3, y3 = p01
+
+    # Bilinear interpolation to get (x,y) from (u,v):
+    # P(u,v) = (1-u)(1-v)*p00 + u(1-v)*p10 + uv*p11 + (1-u)v*p01
+
+    # We need to solve for (u,v) given (x,y)
+    # Approximate (e.g., Newton's method, or a simple guess+1 iteration)
+
+    # Initial guess
+    u = 0.5
+    v = 0.5
+    for _ in 1:5  # 5 Newton iterations
+        # Compute current position
+        px = (1-u)*(1-v)*x0 + u*(1-v)*x1 + u*v*x2 + (1-u)*v*x3
+        py = (1-u)*(1-v)*y0 + u*(1-v)*y1 + u*v*y2 + (1-u)*v*y3
+
+        # Compute error
+        ex = px - x
+        ey = py - y
+
+        # Partial derivatives
+        dpx_du = -(1-v)*x0 + (1-v)*x1 + v*x2 - v*x3
+        dpx_dv = -(1-u)*x0 - u*x1 + u*x2 + (1-u)*x3
+        dpy_du = -(1-v)*y0 + (1-v)*y1 + v*y2 - v*y3
+        dpy_dv = -(1-u)*y0 - u*y1 + u*y2 + (1-u)*y3
+
+        # Jacobian inverse
+        det = dpx_du*dpy_dv - dpx_dv*dpy_du
+        if abs(det) < 1e-8
+            break  # Avoid division by zero
+        end
+
+        du = ( dpy_dv*ex - dpx_dv*ey) / det
+        dv = (-dpy_du*ex + dpx_du*ey) / det
+
+        u -= du
+        v -= dv
+    end
+
+    # Now (u,v) should roughly correspond to (x,y)
+    du = max(abs(u - 0.5) * 2, abs(v - 0.5) * 2)
+    sdf = du - 1
+
+    return sdf
 end
 function (circle::CircleSDF)(t::Transform, x::Number, y::Number)
     xinner, yinner = t(0, 0);
@@ -179,18 +233,29 @@ end
 
 
 function draw_graphic_traverse(o::GraphicsOutput, g::GraphicPart, t::Transform)
-    draw_graphic(o, g, t);
+    hasparts = false;
     try
         g.parts
+        hasparts = true;
     catch
-        return
+        hasparts = false;
     end
     # (x+g.x*w), (y+g.y*h), (w*g.width), (h*g.height)
 
-    # SHOULD BE IN A LET BLOCK
-    [draw_graphic_traverse(o, p, 
-        t(Affine((g.x, g.y), (g.width, g.height)))
-        ) for p in g.parts]
+    if hasparts
+        draw_group_start(o);
+
+        [draw_graphic_traverse(o, p, 
+            t(Affine((g.x, g.y), (g.width, g.height)))
+            ) for p in g.parts]
+
+        draw_graphic(o, g, t);
+        
+        draw_group_end(o);
+    else
+        draw_graphic(o, g, t);
+    end
+    
 end
 function draw_graphic(o::GraphicsOutput, g::GraphicPart, t::Transform)
     throw(ErrorException(@sprintf("Draw graphic not implemented for type %s:%s",typeof(o),typeof(g))))
@@ -279,3 +344,11 @@ function rotate(t::Transform, xy_o::Tuple{Number, Number}, xy::Tuple{Number, Num
     ey = ey ./ sqrt(sum(ey.^2))
     return (([ex[1] ey[1]; ex[2] ey[2]] * [xy...])...,)
 end
+
+
+
+
+
+
+
+
