@@ -585,8 +585,14 @@ function draw_graphic(file::GraphicsOutput, contour::Contour, t::Transform)
         l = contour.levels[li]
         draw_group_start(file);
         for si in 1:(length(contour.sample_ponts)-1)
-            contour_starts = look_for_contours(contour, l, contour.sample_ponts[si], contour.sample_ponts[si+1])
+
+            contour_starts = look_for_contours(contour, l, 
+                contour.transform(contour.sample_ponts[si]...),
+                contour.transform(contour.sample_ponts[si+1]...)   )
+
+            # i would detransform contour starts here
             for start in contour_starts
+                # only to retransform start here as input to draw contour
                 draw_contour(file, contour, t, start, l)
             end
         end
@@ -596,13 +602,10 @@ function draw_graphic(file::GraphicsOutput, contour::Contour, t::Transform)
 end
 
 
-# p1 and p2 should be to-transform. contours should be to-transform
 function look_for_contours(contour::Contour,level::Number, p1::Tuple{Number,Number}, p2::Tuple{Number,Number};log=false)
 
-    p1 = contour.transform(p1...); p2 = contour.transform(p2...);
-
     dir = (p2 .- p1); dist = norm(p2 .- p1);
-    data(s) = contour.data(contour.detransform((p1 .+ (s .* dir))...))
+    data(s) = contour.data( contour.detransform((p1 .+ (s .* dir))...) )
 
     # Walk carefully from p1 to p2.
     loc = 0;
@@ -635,7 +638,7 @@ function look_for_contours(contour::Contour,level::Number, p1::Tuple{Number,Numb
             end
             crossing_point = searchloc;
 
-            push!(contours, contour.detransform( (p1 .+ (crossing_point .* dir))... ))
+            push!(contours, p1 .+ (crossing_point .* dir))
         end
 
         loc = newloc;
@@ -648,13 +651,14 @@ end
 
 # start is to-transform
 function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, start::Tuple{Number, Number}, level)
-    # data(xy) = contour.data(xy)
-    data(xy) = contour.data(contour.detransform(xy...))
+    data(xy) = contour.data( contour.detransform(xy...) )
 
 
-    ε = 0.0000000001
+        
+    topleft = contour.transform(contour.xlims[1], contour.ylims[2])
+    bottomright = contour.transform(contour.xlims[2], contour.ylims[1])
+    domain = abs.(topleft .- bottomright)
 
-    start = contour.transform(start...);
 
     points = [start];
     
@@ -665,7 +669,7 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
         loc = points[end];
 
         a = length(points)
-        trace_border!(contour, contour.detransform(loc...), points, level)
+        trace_border!(contour, loc, points, level)
         
         border_bounces += length(points) -a ;
         loc = points[end];
@@ -678,7 +682,7 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
             break
         end
 
-        if length(points) > 10000
+        if length(points) > 1000
             break
             
         end
@@ -689,12 +693,12 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
             #     break
             # end
             
-            topleft = (contour.xlims[1], contour.ylims[2])
-            bottomright = (contour.xlims[2], contour.ylims[1])
-            domain = abs.(contour.transform(topleft...) .- contour.transform(bottomright...))
+            topleft = contour.transform(contour.xlims[1], contour.ylims[2])
+            bottomright = contour.transform(contour.xlims[2], contour.ylims[1])
+            domain = abs.(topleft .- bottomright)
             dist = abs.(loc .- start) ./ domain
             
-            if maximum(dist) < 0.015
+            if maximum(dist) < 0.05
                 push!(points, start)
                 break
             end
@@ -712,105 +716,113 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
         # steplength = 0.1abs(dot(stepdir, loc))
 
 
-        
-        topleft = (contour.xlims[1], contour.ylims[2])
-        bottomright = (contour.xlims[2], contour.ylims[1])
-        domain = abs.(contour.transform(topleft...) .- contour.transform(bottomright...))
 
         stepdir = stepdir ./ norm(stepdir)
-        steplength = dot(0.1 .* domain, stepdir);
-
+        steplength = 0.01dot(domain, abs.(stepdir))
 
 
         newpoint = [(loc .+ (steplength*stepdir))...,];
-        newpoint[1] = min(max(newpoint[1], contour.xlims[1]), contour.xlims[2]);
-        newpoint[2] = min(max(newpoint[2], contour.ylims[1]), contour.ylims[2]);
+        # newpoint[1] = min(max(newpoint[1], topleft[1]), bottomright[1]);
+        # newpoint[2] = min(max(newpoint[2], bottomright[2]), topleft[2]);
         push!(points, (newpoint...,));
 
         
     end
 
-    println(data(start), " ",length(points), " ",border_bounces, " ",points[begin] == points[end])
+    println(level, " ",length(points), " ",border_bounces, " ",points[begin] == points[end])
 
     boxcolor = contour.colormap((level-contour.clims[1]) ./ (contour.clims[2]-contour.clims[1]))
 
-    points = [contour.detransform(xy...) for xy in points];
+    
+    points = [(
+        max(min(p[1], bottomright[1]), topleft[1]),
+        max(min(p[2], topleft[2]), bottomright[2]) )
+        for p in points
+    ]
+
+    points = [contour.detransform(p...) for p in points]
 
     draw_multiline(file, transform_series(t,points), contour.linewidth, boxcolor, filled=contour.filled)
 end
 
 # loc should be to-transform, points should be transformed.
 function trace_border!(contour::Contour, loc::Tuple{Number, Number}, points, level)
-    data(xy) = contour.data(xy)
+    data(xy) = contour.data(contour.detransform(xy...))
+
+    topleft = contour.transform(contour.xlims[1], contour.ylims[2]);
+    topright = contour.transform(contour.xlims[2], contour.ylims[2]);
+    bottomright = contour.transform(contour.xlims[2], contour.ylims[1]);
+    bottomleft = contour.transform(contour.xlims[1], contour.ylims[1]);
+
 
     nextcorners = [];
-    if (loc[1] < 1.001contour.xlims[1])
+    if (loc[1] < bottomleft[1])
         # println("low x")
         if dot(ForwardDiff.gradient(data, [loc...]),[0,1]) > 0
             nextcorners = [
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[2]) ];
+                topleft,
+                topright,
+                bottomright,
+                bottomleft,
+                topleft ];
         else
             nextcorners = [
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[1]) ];
+                bottomleft,
+                bottomright,
+                topright,
+                topleft,
+                bottomleft ];
         end
-    elseif (loc[1] > 0.999contour.xlims[2])
+    elseif (loc[1] > topright[1])
         # println("hi x")
         if dot(ForwardDiff.gradient(data, [loc...]),[0,1]) < 0
             nextcorners = [
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[2]) ];
+                topright,
+                bottomright,
+                bottomleft,
+                topleft,
+                topright ];
         else
             nextcorners = [
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[1]) ];
+                bottomright,
+                topright,
+                topleft,
+                bottomleft,
+                bottomright ];
         end
-    elseif (loc[2] < 1.0001contour.ylims[1])
+    elseif (loc[2] < bottomleft[2])
         # println("low y")
         if dot(ForwardDiff.gradient(data, [loc...]),[1,0]) < 0
             nextcorners = [
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[1]) ];
+                bottomleft,
+                topleft,
+                topright,
+                bottomright,
+                bottomleft ];
         else
             nextcorners = [
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[1]) ];
+                bottomright,
+                topright,
+                topleft,
+                bottomleft,
+                bottomright ];
         end
-    elseif (loc[2] > 0.999contour.ylims[2])
+    elseif (loc[2] > topright[2])
         # println("hi y")
         if dot(ForwardDiff.gradient(data, [loc...]),[1,0]) < 0
             nextcorners = [
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[1], contour.ylims[2]) ]
+                topleft,
+                bottomleft,
+                bottomright,
+                topright,
+                topleft ]
         else
             nextcorners = [
-                (contour.xlims[2], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[1]),
-                (contour.xlims[1], contour.ylims[2]),
-                (contour.xlims[2], contour.ylims[2]) ]
+                topright,
+                bottomright,
+                bottomleft,
+                topleft,
+                topright ]
         end
     end
     whichtofind = 2;
@@ -826,10 +838,10 @@ function trace_border!(contour::Contour, loc::Tuple{Number, Number}, points, lev
         contour_starts = look_for_contours(contour, level, loc , nextcorner,log=false) #.+ 0.01 .* (nextcorner .- loc)
 
         if length(contour_starts) < whichtofind
-            push!(points, contour.transform(nextcorner...))
-            loc = contour.detransform(points[end]...)
+            push!(points, nextcorner)
+            loc = points[end]
         else
-            push!(points, contour.transform(contour_starts[whichtofind]...))
+            push!(points, contour_starts[whichtofind])
             break
         end
         whichtofind = 1;
