@@ -550,7 +550,7 @@ end
 mutable struct Contour <: GraphicPart
     data::Dataspace
     levels::Array{Number}
-    sample_ponts::Array{Tuple{Number, Number}}
+    sample_points::Array{Array{Tuple{Number, Number}}}
     linewidth::Number
     filled::Bool
     colormap::Function
@@ -581,24 +581,36 @@ function draw_graphic(file::GraphicsOutput, contour::Contour, t::Transform)
     draw_multiline(file, transform_series(t,points), contour.linewidth, boxcolor, filled=contour.filled)
     draw_group_end(file);
 
-    for li in eachindex(contour.levels)
-        l = contour.levels[li]
+    for trace in contour.sample_points
+        println(" trace")
         draw_group_start(file);
-        for si in 1:(length(contour.sample_ponts)-1)
+        for li in eachindex(contour.levels)
+            l = contour.levels[li]
+            draw_group_start(file);
+            for si in 1:(length(trace)-1)
 
-            contour_starts = look_for_contours(contour, l, 
-                contour.transform(contour.sample_ponts[si]...),
-                contour.transform(contour.sample_ponts[si+1]...)   )
+                contour_starts = look_for_contours(contour, l, 
+                    contour.transform(trace[si]...),
+                    contour.transform(trace[si+1]...)   )
 
-            # i would detransform contour starts here
-            for start in contour_starts
-                # only to retransform start here as input to draw contour
-                draw_contour(file, contour, t, start, l)
+                # i would detransform contour starts here
+                for start in contour_starts
+                    # only to retransform start here as input to draw contour
+                    draw_contour(file, contour, t, start, l)
+                end
             end
+            draw_group_end(file);
         end
         draw_group_end(file);
     end
+
+    
+    # for trace in contour.sample_points
+    #     draw_multiline(file, transform_series(t,trace), 2, (0,0,0), filled=false)
+    # end
+
     draw_group_end(file);
+    println("contoured")
 end
 
 
@@ -610,7 +622,7 @@ function look_for_contours(contour::Contour,level::Number, p1::Tuple{Number,Numb
     # Walk carefully from p1 to p2.
     loc = 0;
     contours = [];
-    while loc < 0.99
+    while loc < 0.999999999999
         steplength = min(1-loc,
              abs(0.01 * (data(loc) / ForwardDiff.derivative(data, loc)))
             );
@@ -678,11 +690,11 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
         stepdir = [-dy,dx];
         stepdir = stepdir ./ norm(stepdir);
 
-        if border_bounces > 4
-            break
-        end
+        # if border_bounces > 10
+        #     break
+        # end
 
-        if length(points) > 1000
+        if length(points) > 200
             break
             
         end
@@ -743,6 +755,8 @@ function draw_contour(file::GraphicsOutput, contour::Contour, t::Transform, star
     points = [contour.detransform(p...) for p in points]
 
     draw_multiline(file, transform_series(t,points), contour.linewidth, boxcolor, filled=contour.filled)
+
+    
 end
 
 # loc should be to-transform, points should be transformed.
@@ -755,77 +769,89 @@ function trace_border!(contour::Contour, loc::Tuple{Number, Number}, points, lev
     bottomleft = contour.transform(contour.xlims[1], contour.ylims[1]);
 
 
+    
+    g = ForwardDiff.gradient(data, [loc...])
+
+
     nextcorners = [];
-    if (loc[1] < bottomleft[1])
-        # println("low x")
-        if dot(ForwardDiff.gradient(data, [loc...]),[0,1]) > 0
+    if (loc[1] < bottomleft[1]) # if beyond the left side
+
+        if dot(g,[0,1]) < 0
+            nextcorners = [
+                bottomleft,
+                bottomright,
+                topright,
+                topleft,
+                bottomleft ];
+        else
             nextcorners = [
                 topleft,
                 topright,
                 bottomright,
                 bottomleft,
                 topleft ];
-        else
-            nextcorners = [
-                bottomleft,
-                bottomright,
-                topright,
-                topleft,
-                bottomleft ];
         end
-    elseif (loc[1] > topright[1])
+    elseif (loc[1] > topright[1]) # if beyond the right side
         # println("hi x")
-        if dot(ForwardDiff.gradient(data, [loc...]),[0,1]) < 0
+        if dot(g,[0,1]) > 0
             nextcorners = [
                 topright,
-                bottomright,
-                bottomleft,
                 topleft,
-                topright ];
+                bottomleft,
+                bottomright,
+                topright
+             ];
         else
             nextcorners = [
                 bottomright,
-                topright,
-                topleft,
                 bottomleft,
-                bottomright ];
+                topleft,
+                topright,
+                bottomright
+            ];
         end
-    elseif (loc[2] < bottomleft[2])
+    elseif (loc[2] < bottomleft[2]) # if below the bottom side
         # println("low y")
-        if dot(ForwardDiff.gradient(data, [loc...]),[1,0]) < 0
+        if dot(g,[1,0]) < 0
             nextcorners = [
                 bottomleft,
                 topleft,
                 topright,
                 bottomright,
-                bottomleft ];
+                bottomleft
+                 ];
         else
             nextcorners = [
                 bottomright,
                 topright,
                 topleft,
                 bottomleft,
-                bottomright ];
+                bottomright
+                 ];
         end
-    elseif (loc[2] > topright[2])
+    elseif (loc[2] > topright[2]) # if above the top side
         # println("hi y")
-        if dot(ForwardDiff.gradient(data, [loc...]),[1,0]) < 0
+        if dot(g,[1,0]) > 0
+            nextcorners = [
+                topright,
+                bottomright,
+                bottomleft,
+                topleft,
+                topright
+                 ]
+        else
             nextcorners = [
                 topleft,
                 bottomleft,
                 bottomright,
                 topright,
                 topleft ]
-        else
-            nextcorners = [
-                topright,
-                bottomright,
-                bottomleft,
-                topleft,
-                topright ]
         end
+    else
+        return
     end
     whichtofind = 2;
+    first_iteration=true
     for nextcorner in nextcorners
 
 
@@ -837,14 +863,45 @@ function trace_border!(contour::Contour, loc::Tuple{Number, Number}, points, lev
 
         contour_starts = look_for_contours(contour, level, loc , nextcorner,log=false) #.+ 0.01 .* (nextcorner .- loc)
 
-        if length(contour_starts) < whichtofind
+        if length(contour_starts) == 0
             push!(points, nextcorner)
             loc = points[end]
+        elseif first_iteration
+                
+            # its anticipated that on the first pair (collisionloc, firstofnextcorner), we will at least find one contour_start
+            # which will be collisionloc, so we can ignore that one
+            # except maybe it won't be??
+
+            
+            domain = abs.(topleft .- bottomright)
+            dist = abs.(loc .- contour_starts[1]) ./ domain
+            if maximum(dist) < 0.05 #its the same point
+                contour_starts = contour_starts[2:end]
+            end
+
+            if length(contour_starts) == 0
+                push!(points, nextcorner)
+                loc = points[end]
+            else
+                next_start = contour_starts[1]
+                next_start = ( min(topright[1], max(bottomleft[1],next_start[1])), min(topright[2], max(bottomleft[2],next_start[2])))
+                
+                push!(points, next_start)
+                break
+            end
+
+            
+
+
         else
-            push!(points, contour_starts[whichtofind])
+            
+            next_start = contour_starts[1]
+            next_start = ( min(topright[1], max(bottomleft[1],next_start[1])), min(topright[2], max(bottomleft[2],next_start[2])))
+            
+            push!(points, next_start)
             break
         end
-        whichtofind = 1;
+        first_iteration=false
         # print("fds")
         # readline()
     end

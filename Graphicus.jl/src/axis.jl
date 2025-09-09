@@ -501,6 +501,36 @@ function (camera::PerspectiveCamera)(x::Number, y::Number, z::Number)
     return xy
 end
 
+
+
+mutable struct CabinetCamera <: Projection
+    sdf::SDF
+    axis::Symbol
+    alpha::Number #radians
+    scale::Number
+end
+CabinetCamera(axis, alpha, scale) = CabinetCamera(BorderlessSDF(), axis, alpha, scale);
+function (camera::CabinetCamera)(x::Number, y::Number, z::Number)
+
+    if camera.axis == :x
+        x_proj = y + 0.5x * cos(camera.alpha)
+        y_proj = z + 0.5x * sin(camera.alpha)
+        xy = (x_proj * camera.scale, y_proj * camera.scale)
+        return xy
+    elseif camera.axis == :y
+        x_proj = x + 0.5y * cos(camera.alpha)
+        y_proj = -z - 0.5y * sin(camera.alpha)
+        xy = (x_proj * camera.scale, y_proj * camera.scale)
+        return xy
+    else
+        x_proj = x + 0.5z * cos(camera.alpha)
+        y_proj = y + 0.5z * sin(camera.alpha)
+        xy = (x_proj * camera.scale, y_proj * camera.scale)
+        return xy
+    end
+
+end
+
 mutable struct Axis3D <: GraphicPart
     x::Number
     y::Number
@@ -531,6 +561,11 @@ function draw_graphic_traverse(o::GraphicsOutput, g::Axis3D, t::Transform)
     draw_group_end(o);
 end
 
+function AxesConstructionLines(origin, length, signs)
+    return Multiline3D([origin[1],origin[1]+length*signs[1]],[origin[2],origin[2]],[origin[3],origin[3]],1) + 
+        Multiline3D([origin[1],origin[1]],[origin[2],origin[2]+length*signs[2]],[origin[3],origin[3]],1) + 
+        Multiline3D([origin[1],origin[1]],[origin[2],origin[2]],[origin[3],origin[3]+length*signs[3]],1) 
+end
 
 mutable struct PolarAxis <: GraphicPart
     x::Number

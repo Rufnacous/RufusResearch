@@ -23,6 +23,18 @@ function save_to_svg(filepath::String, g::Graphic)
     return
 end
 
+mutable struct SVGEmbedding <: GraphicPart
+    x
+    y
+    w
+    h
+    svg
+end
+function draw_graphic(file::SVG_File, embed::SVGEmbedding, t::Transform)
+    @writesprintf(file, "<image xmlns=\"http://www.w3.org/2000/svg\" preserveAspectRatio=\"none\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" inkscape:svg-dpi=\"96\" width=\"%.2f\" height=\"%.2f\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"%s\" id=\"image1\" x=\"%.2f\" y=\"%.2f\" style=\"stroke-width:4.06672\"/>",
+    t(embed.w, embed.h)..., embed.svg, t(embed.x, embed.y)...)
+end
+
 function embed_in_svg(filepath::String, templatepath::String, gs::AbstractArray{G}) where G <: GraphicPart
 
     template = EzXML.readxml(templatepath)

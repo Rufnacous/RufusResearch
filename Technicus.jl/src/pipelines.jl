@@ -40,10 +40,14 @@ struct CollectionNode <: PipelineNode
     items::AbstractArray{PipelineNode}
 end
 
-struct ExternalDependencyException <: Exception
+abstract type DependencyException <: Exception end
+struct ExternalDependencyException <: DependencyException
     node::ExternalInputNode
 end
-Base.showerror(io::IO, err::ExternalDependencyException) = print(io, "External dependency unfulfilled ", err.node.name)
+struct UnfulfilledDependencyException <: DependencyException
+    node::PipelineNode
+end
+Base.showerror(io::IO, err::DependencyException) = print(io, "Dependency unfulfilled ", err.node.name)
 
 
 
@@ -94,8 +98,8 @@ function (node::CollectionNode)(channel::String, params::PipeParams; kwargs...)
         item(channel, params; kwargs...);
     end
 end
-function (node::Union{OperationNode,OperationOutputNode})(channel::String,params::PipeParams; force::Bool=false, kwargs...)
-    verify_dependencies(node, channel, params; kwargs...);
+function (node::Union{OperationNode,OperationOutputNode})(channel::String,params::PipeParams; force::Bool=false, do_dependencies::Bool=true, kwargs...)
+    verify_dependencies(node, channel, params, do_dependencies; kwargs...)
     
 
     if (!force) && prevent_re_execution(node, channel, params)
@@ -106,45 +110,61 @@ function (node::Union{OperationNode,OperationOutputNode})(channel::String,params
     
     return node.perform(channel_folder, params; kwargs...);
 end
-function (node::PipelineNode)(channels::AbstractArray{String};force::Bool=false, kwargs...)
-    for channel in channels
-        try
-            node(channel, force=force; kwargs...)
-        catch e
-            if e isa ExternalDependencyException
-                println("Dependencies failed for ",channel," on node ",e.node.name)
-            else rethrow(e) end
+function (node::PipelineNode)(channels::AbstractArray{String};force::Bool=false, do_dependencies::Bool=true, threaded::Bool=false, kwargs...)
+    if threaded
+        Threads.@threads for channel in channels
+            println(channel)
+            try
+                node(channel, force=force, do_dependencies=do_dependencies; kwargs...)
+            catch e
+                if e isa DependencyException
+                    println("Dependencies failed for ",channel," on node ",e.node.name)
+                else rethrow(e) end
+            end
+        end
+    else
+        for channel in channels
+            println(channel)
+            try
+                node(channel, force=force, do_dependencies=do_dependencies; kwargs...)
+            catch e
+                if e isa DependencyException
+                    println("Dependencies failed for ",channel," on node ",e.node.name)
+                else rethrow(e) end
+            end
         end
     end
 end
-function (node::PipelineNode)(channels::AbstractArray{String},params::PipeParams;force::Bool=false, kwargs...)
-    for channel in channels
-        node(channel, params, force=force; kwargs...)
-    end
-end
+# function (node::PipelineNode)(channels::AbstractArray{String},params::PipeParams;force::Bool=false, do_dependencies::Bool=true, threaded::Bool=true, kwargs...)
+#     for channel in channels
+#         println(channel)
+#         node(channel, params, force=force, do_dependencies=do_dependencies; kwargs...)
+#     end
+# end
 
-function verify_dependencies(node, channel, params; kwargs...)
+function verify_dependencies(node, channel, params, do_dependencies; kwargs...)
     for dep in node.dependencies
 
-        if !verify_dependencies(dep, channel, params; kwargs...)
-            return false
-        end
+        verify_dependencies(dep, channel, params, do_dependencies; kwargs...)
+
         # if all of dep's dependencies are fulfilled
         # but it is not
         if !verify(dep.network, dep.verification, channel, params; kwargs...)
-            println(error_msg(dep.verification))
-            # execute it
-            # try
-            dep(channel, params; kwargs...);
-            # catch
-            #     println("Fatal dependency fail on ",dep.name)
-            #     return false
-            # end
+            if do_dependencies
+                # println(error_msg(channel, dep.verification))
+                # execute it
+                # try
+                dep(channel, params; kwargs...);
+                # catch
+                #     println("Fatal dependency fail on ",dep.name)
+                #     return false
+                # end
+            else
+                throw(UnfulfilledDependencyException(dep))
+            end
         end
 
     end
-
-    return true
 
 end
 
@@ -162,11 +182,11 @@ function verify(network::PipeNetwork, method::FileCheck, channel::String, params
         )
 end
 
-function error_msg(method::SpecificCheck)
+function error_msg(channel, method::SpecificCheck)
     return method.error_msg
 end
-function error_msg(method::FileCheck)
-    return @sprintf("Required path not found %s", method.paths)
+function error_msg(channel, method::FileCheck)
+    return @sprintf("Required path not found %s for %s", method.paths, channel)
 end
 
 
