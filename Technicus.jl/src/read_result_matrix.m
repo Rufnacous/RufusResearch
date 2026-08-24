@@ -1,17 +1,19 @@
-function A = read_result_matrix(filename)
+function A = read_result_matrix(filename, dimfix)
     fid = fopen(filename,"r");
     version = fread(fid, 1, "uint64");
     ndims = fread(fid, 1, "uint64");
     dims = fread(fid, [1,ndims], "uint64");
 
     
-    // if dimfix
-    //     fread(fid, 3, "uint64");
-    // end
+    if dimfix
+        fread(fid, 3, "uint64");
+    end
 
+    A = fread(fid, prod(dims), "float64");
+    A = reshape(A, dims(end:-1:1));
 
-    A = zeros(dims(end:-1:1));
-    A = read_result_matrix_inner(fid, A, [], dims(end:-1:1));
+    %A = zeros(dims(end:-1:1));
+    %A = read_result_matrix_inner(fid, A, [], dims(end:-1:1));
     %A = fread(fid, dims(end:-1:1), "float64");
     fclose(fid);
 end
