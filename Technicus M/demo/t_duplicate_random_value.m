@@ -4,12 +4,12 @@ function task = t_duplicate_random_value()
     task.dependencies = {t_assign_random_value};
 end
 
-function duplicate_random_value(folder)
-    load(fullfile(folder, "random_value.mat"), "x");
+function duplicate_random_value(dataset)
+    x = dataset.load("random_value.mat");
     y = 2 * x;
-    save(fullfile(folder, "random_value_2.mat"), "y");
+    dataset.save("random_value_2.mat", y);
 end
 
-function bool = is_random_value_doubled(folder)
-    bool = isfile(fullfile(folder, "random_value_2.mat"));
+function bool = is_random_value_doubled(dataset)
+    bool = dataset.isfile("random_value_2.mat");
 end

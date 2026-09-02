@@ -1,22 +1,23 @@
-function perform_task(db, name_or_names, task)
+function perform_task(dataset_or_sets, task)
 
-    if iscell(name_or_names)
-        names = name_or_names;
+    if iscell(dataset_or_sets)
+        datasets = dataset_or_sets;
     else
-        names = {name_or_names};
+        datasets = {dataset_or_sets};
     end
 
-    for name = names
+    for set_i = 1:length(datasets)
+        dataset = datasets{set_i};
 
         for dep_i = 1:length(task.dependencies)
             dep = task.dependencies{dep_i};
             
-            if ~dep.validator(fullfile(db, name))
-                perform_task(db, name, dep);
+            if ~dep.validator(Dataset(dataset))
+                perform_task(dataset, dep);
             end
         end
 
-        task.operator(fullfile(db, name));
+        task.operator(Dataset(dataset));
 
     end
 

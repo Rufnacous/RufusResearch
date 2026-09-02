@@ -4,11 +4,14 @@ function task = t_assign_random_value()
     task.dependencies = {};
 end
 
-function assign_random_value(folder)
+function assign_random_value(dataset)
     x = rand();
-    save(fullfile(folder, "random_value.mat"), "x");
+
+    dataset.save("random_value.mat", x);
+    % save(fullfile(folder, "random_value.mat"), "x");
 end
 
-function bool = is_random_value_saved(folder)
-    bool = isfile(fullfile(folder, "random_value.mat"));
+function bool = is_random_value_saved(dataset)
+    bool = dataset.isfile("random_value.mat");
+    % bool = isfile(fullfile(folder, "random_value.mat"));
 end

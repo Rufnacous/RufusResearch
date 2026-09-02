@@ -1,12 +1,8 @@
-function label_dataset(db, name, tags_to_add)
+function label_dataset(dataset, tags_to_add)
 
-    if ~isfolder(fullfile(db, name))
-        error('Attempted to label a non-existent dataset!')
-    end
-
-    json_file = fullfile(db, name, 'tags.json');
+    json_file = fullfile(dataset, 'tags.json');
     if isfile(json_file)
-        tags = load_tags(db, name);
+        tags = load_tags(dataset);
     else
         tags = {};
     end
