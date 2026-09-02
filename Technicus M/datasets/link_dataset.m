@@ -1,4 +1,5 @@
 function link_dataset(dataset, upstream_sources_to_add)
+%LINK_DATASET Link other datasets as upstream sources to a dataset.
 
     json_file = fullfile(dataset, 'upstream.json');
     if isfile(json_file)

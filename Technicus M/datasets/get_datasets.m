@@ -1,4 +1,8 @@
 function [queryset] = get_datasets(db, query)
+% GET_DATASETS Retrieve datasets from the database via a query.
+%   Query struct should have a .filter property which has properties for
+%   each condition to filter against. Eg. query.filter.is_abc = true.
+
     all_datasets = {};
     for r_i = db.index()
         repo_sets = dir(db.repository(r_i));

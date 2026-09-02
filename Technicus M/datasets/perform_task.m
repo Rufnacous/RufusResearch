@@ -1,4 +1,5 @@
 function perform_task(dataset_or_sets, task)
+%PERFORM_TASK Perform a task on either a dataset or a set of datasets.
 
     if iscell(dataset_or_sets)
         datasets = dataset_or_sets;

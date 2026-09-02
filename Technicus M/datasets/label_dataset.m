@@ -1,4 +1,5 @@
 function label_dataset(dataset, tags_to_add)
+%LABEL_DATASET Add tags to a dataset's tags.json
 
     json_file = fullfile(dataset, 'tags.json');
     if isfile(json_file)

@@ -1,6 +1,11 @@
 function blank_datasets(repo, number, base_name, labelling_func, linking_func)
-%BLANK_DATASETS Summary of this function goes here
-%   Detailed explanation goes here
+%BLANK_DATASETS Create new dataset folders in the specified repository
+%   repo: Choose the repo db.repository(i) where i is the i'th folder
+%   listed in the env file. number: How many new dataset folders?
+%   base_name: String for naming the folders. labelling_func: Lambda
+%   function over i that returns a struct of tags. linking_func: Lambda
+%   over i that returns a struct of upstream references (each with a repo
+%   and a dataset).
 
     for ds_i = 1:number
 

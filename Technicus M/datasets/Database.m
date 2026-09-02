@@ -1,6 +1,5 @@
 classdef Database
-    %DATABASE Summary of this class goes here
-    %   Detailed explanation goes here
+    %DATABASE A set of repositories, which each contain dataset folders.
 
     properties
         repositories
@@ -8,8 +7,8 @@ classdef Database
 
     methods
         function obj = Database()
-            %DATABASE Construct an instance of this class
-            %   Detailed explanation goes here
+            %DATABASE Construct a database. Requires a database.env to be
+            %located somewhere in MATLAB's path.
             envfile = which("database.env");
             if isempty(envfile)
                 error('database.env not found on the MATLAB path.');
@@ -25,11 +24,11 @@ classdef Database
         end
 
         function repo = repository(obj,i)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
+            %REPOSITORY Retrieve the i'th repository
             repo = obj.repositories(i);
         end
         function idx = index(obj)
+            %IDX Returns the 1:N vector to iterate over repositories.
             idx = 1:length(obj.repositories);
         end
     end
