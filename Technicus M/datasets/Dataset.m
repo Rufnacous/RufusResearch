@@ -19,7 +19,7 @@ classdef Dataset
             for s_i = 1:length(sources)
                 label = sources{s_i};
                 source = upstreamjson.(label);
-                if length(source.dataset) == 1
+                if ischar(source.dataset(1))
                     obj.upstream.(label) = Dataset(fullfile(db.repository(source.repo), source.dataset));
                 else
                     sss = {};
@@ -45,7 +45,7 @@ classdef Dataset
         function value = load(obj, path)
             %LOAD Either returns the contents of a saved .mat, or returns
             %the filepath of any other file type.
-            if strcmp( path(end-3:end), ".mat")
+            if endsWith(path, ".mat")
                 load(fullfile(obj.folderpath, path));
             else
                 value = fullfile(obj.folderpath, path);
@@ -66,6 +66,11 @@ classdef Dataset
         function savefig(obj, fig, name, format)
             %SAVEFIG Wraps saveas for the dataset.
             saveas(fig, fullfile(obj.folderpath, name), format);
+        end
+
+        function f = folder(obj)
+            %FOLDER Returns folderpath
+            f = obj.folderpath;
         end
     end
 end
