@@ -72,5 +72,21 @@ classdef Dataset
             %FOLDER Returns folderpath
             f = obj.folderpath;
         end
+
+        function n = name(obj)
+            % NAME Returns name of dataset folder
+            [~,n] = fileparts(obj.folderpath);
+        end
+
+        function f = repository_folder(obj)
+            %REPOSITORY_FOLDER Returns folder of repository
+            [f] = fileparts(obj.folderpath);
+        end
+
+        function f = in_repository(obj, file)
+            %IN_REPOSITORY Returns the filepath of a file stored in the
+            %dataset's repsository.
+            f = fullfile(obj.repository_folder(), file);
+        end
     end
 end

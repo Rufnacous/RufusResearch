@@ -1,4 +1,4 @@
-function perform_task(dataset_or_sets, task)
+function perform_task(dataset_or_sets, task, force)
 %PERFORM_TASK Perform a task on either a dataset or a set of datasets.
 
     % Whether we've been passed one dataset or many, let's just process it
@@ -25,10 +25,10 @@ function perform_task(dataset_or_sets, task)
                     % If the dependency is an external one and isn't
                     % fulfilled, error
                     if ~isfield(dep.task, 'operator')
-                        error(sprintf("%s hasn't been fulfilled for %s", dep.task.name, dataset));
+                        error(sprintf("[%s] hasn't been fulfilled for %s", dep.task.name, dataset));
                     end
                     % Run the dependent task here
-                    perform_task(dataset, dep.task);
+                    perform_task(dataset, dep.task, false);
                 end
 
             % If this dependency relies on an upstream dataset(s)
@@ -49,7 +49,7 @@ function perform_task(dataset_or_sets, task)
                         end
                         % Run the dependent task on the upstream if
                         % necessary.
-                        perform_task(upstream{u_i}.folderpath, dep.task);
+                        perform_task(upstream{u_i}.folderpath, dep.task, false);
                     end
                 end
             end
@@ -57,7 +57,7 @@ function perform_task(dataset_or_sets, task)
         end
 
         % If the task hasn't already been run here, run it
-        if ~task.validator(dataset_obj)
+        if force || (~task.validator(dataset_obj))
             fprintf("Performing task [%s] on %s\n", task.name, dataset);
             task.operator(dataset_obj);
         end

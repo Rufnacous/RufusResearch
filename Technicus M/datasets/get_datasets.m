@@ -6,6 +6,7 @@ function [queryset] = get_datasets(db, query)
     all_datasets = {};
     for r_i = db.index()
         repo_sets = dir(db.repository(r_i));
+        repo_sets = repo_sets([repo_sets.isdir]);
         for s_i = 3:length(repo_sets)
             all_datasets{end+1} = fullfile(repo_sets(s_i).folder, repo_sets(s_i).name);
         end
