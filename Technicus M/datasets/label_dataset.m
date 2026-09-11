@@ -2,11 +2,12 @@ function label_dataset(dataset, tags_to_add)
 %LABEL_DATASET Add tags to a dataset's tags.json
 
     json_file = fullfile(dataset, 'tags.json');
-    if isfile(json_file)
-        tags = load_tags(dataset);
-    else
-        tags = {};
-    end
+    % if isfile(json_file)
+    %     tags = load_tags(dataset);
+    % else
+    %     tags = {};
+    % end
+    tags = {};
 
     tta_fields = fields(tags_to_add);
     for f_i = 1:length(tta_fields)

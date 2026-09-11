@@ -10,6 +10,24 @@ classdef Dataset
         function obj = Dataset(path)
             %DATASET Construct a handle for a dataset of a given path
             db = Database();
+            [repository_locs, repository_names] = fileparts(db.repositories);
+            if ~isfolder(path)
+                [repository, datasetname] = fileparts(path);
+                passed_a_shortname = true;
+                if repository == ""
+                    passed_a_shortname = false;
+                elseif sum(ismember(repository_names, repository)) ~= 1
+                    passed_a_shortname = false;
+                elseif ~isfolder(fullfile(repository_locs(ismember(repository_names, repository)),repository_names(ismember(repository_names, repository)),datasetname))
+                    passed_a_shortname = false;
+                end
+
+                if passed_a_shortname
+                    path = fullfile(repository_locs(ismember(repository_names, repository)), repository_names(ismember(repository_names, repository)),datasetname);
+                else
+                    error("Unknown dataset");
+                end
+            end
             obj.folderpath = path;
             obj.upstream = {};
 
