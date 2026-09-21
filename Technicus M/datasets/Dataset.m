@@ -55,9 +55,31 @@ classdef Dataset
             bool = isfile(fullfile(obj.folderpath, path));
         end
 
+        function bool = isfolder(obj, path)
+            %ISFILE Wraps isfolder for the dataset.
+            bool = isfolder(fullfile(obj.folderpath, path));
+        end
+
         function save(obj, path, value)
             %SAVE Wraps save (for .mat files) for the dataset.
             save(fullfile(obj.folderpath, path), "value");
+        end
+
+        function s = read_json(obj, path)
+            %READ_JSON Reads a json file to a struct
+            json_file = fullfile(obj.folderpath, path);
+            fid = fopen(json_file, "r");
+            s = jsondecode(char(fread(fid, inf)'));
+            fclose(fid);
+        end
+
+        function write_json(obj, path, s)
+            %WRITE_JSON Writes a struct as a json file
+            json_file = fullfile(obj.folderpath, path);
+            fid = fopen(json_file, "w+");
+            json_text = jsonencode(s, "PrettyPrint",true);
+            fwrite(fid, json_text);
+            fclose(fid);  
         end
 
         function value = load(obj, path)
@@ -68,6 +90,11 @@ classdef Dataset
             else
                 value = fullfile(obj.folderpath, path);
             end
+        end
+
+        function f = dir(obj, pattern)
+            %DIR Wraps dir for the dataset.
+            f = dir(fullfile(obj.folderpath, pattern));
         end
 
         function file = find(obj, pattern)
@@ -84,6 +111,22 @@ classdef Dataset
         function savefig(obj, fig, name, format)
             %SAVEFIG Wraps saveas for the dataset.
             saveas(fig, fullfile(obj.folderpath, name), format);
+        end
+
+        function imsave(obj, im, name)
+            %IMSAVE Wraps imwrite for the dataset.
+            imwrite(im, fullfile(obj.folderpath, name));
+        end
+
+        function im = imread(obj, name)
+            %IMREAD Wraps imread for the dataset.
+            im = imread(fullfile(obj.folderpath, name));
+        end
+
+        function f = mkdir(obj, name)
+            %MKDIR Wraps mkdir for the dataset.
+            f = fullfile(obj.folderpath, name);
+            mkdir(f);
         end
 
         function f = folder(obj)
