@@ -4,7 +4,7 @@ function [return_value] = perform_task(task, dataset_or_sets, force_mode)
         return_value = task;
         return
     end
-    if force_mode == "ensure"
+    if (~exist("force_mode","var")) || (force_mode == "ensure")
         perform_task_inner(task, dataset_or_sets, false, false)
     elseif force_mode == "force"
         perform_task_inner(task, dataset_or_sets, true, false)
