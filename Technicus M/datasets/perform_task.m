@@ -50,6 +50,9 @@ function perform_task_inner(task, dataset_or_sets, force, force_dependencies)
 
             % If this dependency relies on an upstream dataset(s)
             else
+                if ~isfield(dataset_obj.upstream, dep.upstream)
+                    error(sprintf("Dataset: %s does not have upstream target set: %s", dataset_obj.name(),dep.upstream))
+                end
                 upstream = dataset_obj.upstream.(dep.upstream);
                 % upstream may be one or multiple, let's just make it a
                 %   cellarray as before
