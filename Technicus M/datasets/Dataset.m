@@ -139,15 +139,17 @@ classdef Dataset
             [~,n] = fileparts(obj.folderpath);
         end
 
-        function f = repository_folder(obj)
-            %REPOSITORY_FOLDER Returns folder of repository
-            [f] = fileparts(obj.folderpath);
-        end
+        % Discontinuing
+        % function f = repository_folder(obj)
+        %     %REPOSITORY_FOLDER Returns folder of repository
+        %     [f] = fileparts(obj.folderpath);
+        % end
 
-        function f = in_repository(obj, file)
-            %IN_REPOSITORY Returns the filepath of a file stored in the
-            %dataset's repsository.
-            f = fullfile(obj.repository_folder(), file);
-        end
+        % Discontinuing
+        % function f = in_repository(obj, file)
+        %     %IN_REPOSITORY Returns the filepath of a file stored in the
+        %     %dataset's repsository.
+        %     f = fullfile(obj.repository_folder(), file);
+        % end
     end
 end
