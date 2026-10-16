@@ -1,6 +1,8 @@
 function link_dataset(dataset, upstream_sources_to_add)
 %LINK_DATASET Link other datasets as upstream sources to a dataset.
 
+   
+
     json_file = fullfile(dataset, 'upstream.json');
     % if isfile(json_file)
     %     upstream = load_upstream(dataset);
@@ -13,14 +15,25 @@ function link_dataset(dataset, upstream_sources_to_add)
     usa_fields = fields(upstream_sources_to_add);
     for f_i = 1:length(usa_fields)
         field_name = usa_fields{f_i};
-        source = upstream_sources_to_add.(field_name);
+        source = string(upstream_sources_to_add.(field_name));
         if length(source) == 1
-            upstream.(field_name) = source;
+
+            [repo_partition,dataset] = fileparts(source);
+            [repo,partition] = fileparts(repo_partition);
+
+            upstream.(field_name).repo = repo;
+            upstream.(field_name).partition = partition;
+            upstream.(field_name).dataset = dataset;
         else
-            upstream.(field_name).repo = source(1).repo;
+            [repo_partition,~] = fileparts(source(1));
+            [repo,partition] = fileparts(repo_partition);
+
+            upstream.(field_name).repo = repo;
+            upstream.(field_name).partition = partition;
             upstream.(field_name).dataset = {};
             for j = 1:length(source)
-                upstream.(field_name).dataset{end+1} = source(j).dataset;
+                [~,dataset] = fileparts(source(j));
+                upstream.(field_name).dataset{end+1} = dataset;
             end
         end
     end

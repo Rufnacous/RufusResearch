@@ -7,44 +7,55 @@ classdef Dataset
     end
 
     methods
-        function obj = Dataset(path)
+        function obj = Dataset(identifier)
             %DATASET Construct a handle for a dataset of a given path
             db = Database();
-            [repository_locs, repository_names] = fileparts(db.repositories);
-            if ~isfolder(path)
-                [repository, datasetname] = fileparts(path);
-                passed_a_shortname = true;
-                if repository == ""
-                    passed_a_shortname = false;
-                elseif sum(ismember(repository_names, repository)) ~= 1
-                    passed_a_shortname = false;
-                elseif ~isfolder(fullfile(repository_locs(ismember(repository_names, repository)),repository_names(ismember(repository_names, repository)),datasetname))
-                    passed_a_shortname = false;
-                end
 
-                if passed_a_shortname
-                    path = fullfile(repository_locs(ismember(repository_names, repository)), repository_names(ismember(repository_names, repository)),datasetname);
-                else
-                    error("Unknown dataset");
+            if ~isfolder(identifier)
+
+                identifier = strrep(identifier, "\", "/");
+                identifiers = string(split(identifier,'/'));
+                if length(identifiers) ~= 3
+                    error("Incorrectly formatted dataset input.");
                 end
+                reponame = identifiers(1);
+                partname = identifiers(2);
+                set_name = identifiers(3);
+    
+                if ~isfield(db.repositories, reponame)
+                    error("Specified repository does not exist in db.");
+                end
+                repopath = db.repositories.(reponame);
+    
+                partpath = fullfile(repopath, partname);
+                if ~isfolder(partpath)
+                    error("Specified partition does not exist.")
+                end
+                datasetpath = fullfile(partpath, set_name);
+                if ~isfolder(datasetpath)
+                    error("Specified dataset does not exist as folder.")
+                end
+            else
+                datasetpath = identifier;
             end
-            obj.folderpath = path;
+
+            obj.folderpath = datasetpath;
             obj.upstream = {};
 
-            upstreamjson = load_upstream(path);
+            upstreamjson = load_upstream(datasetpath);
 
             sources = fields(upstreamjson);
             for s_i = 1:length(sources)
-                label = sources{s_i};
-                source = upstreamjson.(label);
+                link = sources{s_i};
+                source = upstreamjson.(link);
                 if ischar(source.dataset(1))
-                    obj.upstream.(label) = Dataset(fullfile(db.repository(source.repo), source.dataset));
+                    obj.upstream.(link) = Dataset(fullfile(source.repo, source.partition, source.dataset));
                 else
                     sss = {};
                     for s_j = 1:length(source.dataset)
-                        sss{end+1} = Dataset(fullfile(db.repository(source.repo), source.dataset(s_j)));
+                        sss{end+1} = Dataset(fullfile(source.repo, source.partition, source.dataset(s_j)));
                     end
-                    obj.upstream.(label) = sss;
+                    obj.upstream.(link) = sss;
                 end
             end
         
