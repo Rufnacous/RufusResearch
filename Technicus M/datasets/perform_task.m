@@ -80,9 +80,9 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
         if task.hasoperator
             %fprintf("Performing task [%s] on %s\n", task.name, dataset);
             % task.operator(dataset_obj);
-            stack{end+1} = struct("task", task, "dataset_obj", dataset_obj, "user_involvement", false);
+            stack{end+1} = struct("task", task, "dataset_obj", dataset_obj, "force", force);
         else
-            stack{end+1} = struct("task", task, "dataset_obj", dataset_obj, "user_involvement", true);
+            stack{end+1} = struct("task", task, "dataset_obj", dataset_obj, "force", force);
             %fprintf("Skipping operatorless task [%s] on %s\n", task.name, dataset);
         end
     end
@@ -155,40 +155,73 @@ end
 
 
 function run_stacks(dataset_stacks)
+    operating_mode = "do_manual";
+
     while any(cellfun(@(s) ~isempty(s), dataset_stacks)) % While we still have stacks with jobs in
 
         external_tasks_stuck_on = {};
         found_task_to_do = false;
+        manual_tasks_found = false;
+        auto_tasks_found = false;
         for s_i = 1:length(dataset_stacks)
             stack = dataset_stacks{s_i};
             if ~isempty(stack) % If there are tasks on this stack
-                if ~( stack{end}.user_involvement )
-                    task = stack{end}.task;
-                    dataset_obj = stack{end}.dataset_obj;
-                    fprintf("Performing task [%s] on %s\n", task.name, dataset_obj.name());
-                    task.operator(dataset_obj);
+                task = stack{end}.task;
+                dataset_obj = stack{end}.dataset_obj;
+
+                if task.validate(dataset_obj) && ~(stack{end}.force)
                     dataset_stacks{s_i} = stack(1:(end-1));
-                    found_task_to_do = true;
-                    break
-                else
-                    external_tasks_stuck_on{end+1} = sprintf("[%s] for %s", task.name, dataset_obj.name());
+                    continue
                 end
+
+                if strcmp(operating_mode, "do_manual")
+
+                    if strcmp(task.weight,"manual") % If the top of the stack is a manual task
+                        fprintf("Performing task [%s] on %s\n", task.name, dataset_obj.name());
+                        task.operator(dataset_obj);
+                        dataset_stacks{s_i} = stack(1:(end-1));
+                        found_task_to_do = true;
+                        break
+                    elseif (~strcmp(task.weight, "manual")) && task.hasoperator
+                        auto_tasks_found = true;
+                    else
+                        external_tasks_stuck_on{end+1} = sprintf("[%s] for %s", task.name, dataset_obj.name());
+                    end
+
+                else % operating_mode == "find_manual"
+
+                    if (~strcmp(task.weight,"manual")) && task.hasoperator % If the top of the stack is automatic and operable
+                        fprintf("Performing task [%s] on %s\n", task.name, dataset_obj.name());
+                        task.operator(dataset_obj);
+                        dataset_stacks{s_i} = stack(1:(end-1));
+                        found_task_to_do = true;
+                        break
+                    elseif strcmp(task.weight, "manual")
+                        manual_tasks_found = true;
+                    else
+                        external_tasks_stuck_on{end+1} = sprintf("[%s] for %s\n", task.name, dataset_obj.folder());
+                    end
+
+                end
+
             end
         end
         if found_task_to_do
+            continue
+        end
+        if strcmp(operating_mode, "find_manual") && manual_tasks_found
+            operating_mode = "do_manual";
+            continue
+        end
+        if strcmp(operating_mode, "do_manual") && auto_tasks_found
+            operating_mode = "find_manual";
             continue
         end
 
         for mtso_i = 1:length(external_tasks_stuck_on)
             fprintf( external_tasks_stuck_on{mtso_i} );
         end
-        error("Cannot proceed further; no operable tasks left - read printout above of manual.");
-
-        % Todo: There are operable tasks and external tasks.
-        % But some operable tasks require manual input. We have no way to
-        % distinguish these so far; but also don't know what order to sort
-        % them. Realistically we need task tags: normal/heavy/manual and
-        % this would allow a reasonable sorting.
+        error("Cannot proceed further; no operable tasks left - read printout above of externals to fulfil.");
 
 
     end

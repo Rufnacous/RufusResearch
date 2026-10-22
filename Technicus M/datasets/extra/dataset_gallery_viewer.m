@@ -1,20 +1,30 @@
-function dataset_gallery_viewer(filepathprefix, imgname)
+function dataset_gallery_viewer(filepathprefix, varargin)
+
+    imgnames = {};
+    for i = 1:numel(varargin)
+        imgnames{i} = varargin{i};
+    end
+
 
     dirmatches = dir(sprintf("%s*", filepathprefix));
-    imgs = {};
+    imgsets = {};
     for i = 1:length(dirmatches)
         match = fullfile(dirmatches(i).folder, dirmatches(i).name);
-
-        if isfile(fullfile(match, imgname))
-            imgs{end+1} = imread(fullfile(match, imgname));
+        imgs = {};
+        for j = 1:length(imgnames)
+            imgname = imgnames{j};
+            if isfile(fullfile(match, imgname))
+                imgs{end+1} = imread(fullfile(match, imgname));
+            end
+            fprintf("%s\n", match);
         end
-        fprintf("%s\n", match);
+        imgsets{i} = imgs;
     end
     
-    fig = uifigure("Name",sprintf("Gallery of %s", imgname));
+    fig = uifigure("Name","Gallery");
     
     g = uigridlayout(fig, [2,1]);
-    g.RowHeight = {'5x', '1x'};
+    g.RowHeight = {'5x', '1x', '1x'};
     g.ColumnWidth = {'1x'};
     
     p1 = uipanel(g);
@@ -27,16 +37,49 @@ function dataset_gallery_viewer(filepathprefix, imgname)
     p2.Layout.Column = 1;
     p2_inner = uigridlayout(p2, [1,1], 'Padding', 0);
     
-    ui_im = uiimage(p1_inner, "ImageSource",imgs{1});
+    p3 = uipanel(g);
+    p3.Layout.Row = 3;
+    p3.Layout.Column = 1;
+    p3_inner = uigridlayout(p3, [1,1], 'Padding', 0);
     
-    sld = uislider(p2_inner,"Limits",[1 length(imgs)],"Step",1,"ValueChangingFcn",@(src,event)updateGauge(event,ui_im, imgs),"MajorTicks",1:length(imgs));
+    imgset1 = imgsets{1};
+    ui_im = uiimage(p1_inner, "ImageSource",imgset1{1});
+    
+    setappdata(fig, 'slidervalue', 1);
+    setappdata(fig, 'imgset', 1)
+    sld = uislider(p2_inner,"Limits",[1 length(dirmatches)],"Step",1,"ValueChangingFcn",@(src,event)updateGauge(fig, event,ui_im, imgsets),"MajorTicks",1:length(dirmatches));
 
-    
+
+    t = uigridlayout(p3_inner, [1,numel(imgnames)]);
+    %g.RowHeight = {'1x'};
+    %g.ColumnWidth = {'1x'};
+    for i = 1:numel(imgnames)
+
+        pt = uipanel(t);
+        pt.Layout.Row = 1;
+        pt.Layout.Column = i;
+        pt_inner = uigridlayout(pt, [1,1], 'Padding', 0);
+
+        uibutton(pt_inner, "Text", imgnames{i}, "ButtonPushedFcn", @(src,event) updateBtn(fig, event, ui_im, imgsets, i));
+    end
+
 end
 
 
-function updateGauge(event,ui_im, imgs)
+function updateGauge(fig, event,ui_im, imgsets)
+
+    setappdata(fig, 'slidervalue', event.Value(1));
+
+    imgset = imgsets{getappdata(fig, 'slidervalue')};
+
+    ui_im.ImageSource = imgset{getappdata(fig, 'imgset')};
     
-    ui_im.ImageSource = imgs{event.Value(1)};
+end
+
+function updateBtn(fig, event, ui_im, imgsets, i)
+    setappdata(fig, 'imgset', i);
     
+    imgset = imgsets{getappdata(fig, 'slidervalue')};
+
+    ui_im.ImageSource = imgset{getappdata(fig, 'imgset')};
 end
