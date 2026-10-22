@@ -36,5 +36,9 @@ classdef Task
                  valid = obj.validator(dataset_obj);
              end
         end
+
+        function handle(task, varargin)
+            perform_task(task, varargin{:});
+        end
     end
 end

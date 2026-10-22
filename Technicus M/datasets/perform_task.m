@@ -92,8 +92,20 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
     for dep_i = 1:length(task.dependencies)
         dep = task.dependencies{dep_i};
 
+        tag_filter_match = true;
+        for tf_i = 1:length(dep.tag_filters)
+            tag_filter = dep.tag_filters(tf_i);
+            if ~(dataset_obj.tagvalueis(tag_filter.tag, tag_filter.value))
+                tag_filter_match = false;
+                break;
+            end
+        end
+        if ~tag_filter_match
+            continue;
+        end
+
         % If this isn't a dependency on an upstream dataset
-        if ~isfield(dep, 'upstream')
+        if ~dep.is_on_upstream
             % If the dependency isn't fulfilled
             if (force_dependencies && isfield(dep.task, 'operator')) || (~dep.task.validate(dataset_obj))
                 % Run the dependent task here

@@ -119,6 +119,14 @@ classdef Dataset
             value = tags.(name);
         end
 
+        function bool = tagvalueis(obj, name, value)
+            try
+                bool = strcmp(obj.tag(name), value);
+            catch
+                bool = false;
+            end
+        end
+
         function savefig(obj, fig, name, format)
             %SAVEFIG Wraps saveas for the dataset.
             saveas(fig, fullfile(obj.folderpath, name), format);
