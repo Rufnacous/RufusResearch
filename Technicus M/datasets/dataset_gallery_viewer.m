@@ -8,6 +8,7 @@ function dataset_gallery_viewer(filepathprefix, imgname)
         if isfile(fullfile(match, imgname))
             imgs{end+1} = imread(fullfile(match, imgname));
         end
+        fprintf("%s\n", match);
     end
     
     fig = uifigure("Name",sprintf("Gallery of %s", imgname));

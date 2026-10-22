@@ -76,8 +76,8 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
 
 
     % If the task hasn't already been run here, run it
-    if (force || (~validate(task,dataset_obj)))
-        if isfield(task, "operator")
+    if (force || (~task.validate(dataset_obj)))
+        if task.hasoperator
             %fprintf("Performing task [%s] on %s\n", task.name, dataset);
             % task.operator(dataset_obj);
             stack{end+1} = struct("task", task, "dataset_obj", dataset_obj, "user_involvement", false);
@@ -95,7 +95,7 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
         % If this isn't a dependency on an upstream dataset
         if ~isfield(dep, 'upstream')
             % If the dependency isn't fulfilled
-            if (force_dependencies && isfield(dep.task, 'operator')) || (~validate(dep.task, dataset_obj))
+            if (force_dependencies && isfield(dep.task, 'operator')) || (~dep.task.validate(dataset_obj))
                 % Run the dependent task here
                 stack = apply_to_dataset(dep.task, dataset, force_dependencies, force_dependencies, stack);
 
@@ -120,7 +120,7 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
             end
             % For each upstream set for this dependency
             for u_i = 1:length(upstream)
-                if (force_dependencies && isfield(dep.task, 'operator')) || (~validate(dep.task, upstream{u_i}))
+                if (force_dependencies && isfield(dep.task, 'operator')) || (~dep.task.validate(upstream{u_i}))
                     % Run the dependent task on the upstream if
                     % necessary.
                     stack = apply_to_dataset(dep.task, upstream{u_i}.folderpath, force_dependencies, force_dependencies, stack);
@@ -140,13 +140,6 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
 
 end
 
-function [valid] = validate(task, dataset_obj)
-     if isstring(task.validator)
-         valid = dataset_obj.isfile(task.validator);
-     else
-         valid = task.validator(dataset_obj);
-     end
-end
 
 
 function run_stacks(dataset_stacks)
