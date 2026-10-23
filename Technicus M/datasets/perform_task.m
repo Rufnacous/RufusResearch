@@ -171,7 +171,8 @@ function run_stacks(dataset_stacks)
 
                 
                 while task.validate(dataset_obj) && ~(stack{end}.force)
-                    dataset_stacks{s_i} = stack(1:(end-1));
+                    stack = stack(1:(end-1));
+                    dataset_stacks{s_i} = stack;
                     if isempty(stack)
                         break
                     end
