@@ -169,10 +169,19 @@ function run_stacks(dataset_stacks)
                 task = stack{end}.task;
                 dataset_obj = stack{end}.dataset_obj;
 
-                if task.validate(dataset_obj) && ~(stack{end}.force)
+                
+                while task.validate(dataset_obj) && ~(stack{end}.force)
                     dataset_stacks{s_i} = stack(1:(end-1));
+                    if isempty(stack)
+                        break
+                    end
+                    task = stack{end}.task;
+                    dataset_obj = stack{end}.dataset_obj;
+                end
+                if isempty(stack)
                     continue
                 end
+                
 
                 if strcmp(operating_mode, "do_manual")
 
