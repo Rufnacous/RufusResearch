@@ -1,4 +1,4 @@
-function dataset_gallery_viewer(filepathprefix, varargin)
+function dataset_gallery_viewer(dataset_or_sets, varargin)
 
     imgnames = {};
     for i = 1:numel(varargin)
@@ -6,17 +6,20 @@ function dataset_gallery_viewer(filepathprefix, varargin)
     end
 
 
-    dirmatches = dir(sprintf("%s*", filepathprefix));
+    %dirmatches = dir(sprintf("%s*", filepathprefix));
+    datasets = parse_dataset_input(dataset_or_sets);
+
     imgsets = {};
-    for i = 1:length(dirmatches)
-        match = fullfile(dirmatches(i).folder, dirmatches(i).name);
+    for i = 1:length(datasets)
+        %match = fullfile(dirmatches(i).folder, dirmatches(i).name);
+        datasetpath = Dataset(datasets(i)).folder();
         imgs = {};
         for j = 1:length(imgnames)
             imgname = imgnames{j};
-            if isfile(fullfile(match, imgname))
-                imgs{end+1} = imread(fullfile(match, imgname));
+            if isfile(fullfile(datasetpath, imgname))
+                imgs{end+1} = imread(fullfile(datasetpath, imgname));
             end
-            fprintf("%s\n", match);
+            fprintf("%s / %s\n", datasets(i), imgname);
         end
         imgsets{i} = imgs;
     end
@@ -47,7 +50,7 @@ function dataset_gallery_viewer(filepathprefix, varargin)
     
     setappdata(fig, 'slidervalue', 1);
     setappdata(fig, 'imgset', 1)
-    sld = uislider(p2_inner,"Limits",[1 length(dirmatches)],"Step",1,"ValueChangingFcn",@(src,event)updateGauge(fig, event,ui_im, imgsets),"MajorTicks",1:length(dirmatches));
+    sld = uislider(p2_inner,"Limits",[1 length(datasets)],"Step",1,"ValueChangingFcn",@(src,event)updateGauge(fig, event,ui_im, imgsets),"MajorTicks",1:length(datasets));
 
 
     t = uigridlayout(p3_inner, [1,numel(imgnames)]);
