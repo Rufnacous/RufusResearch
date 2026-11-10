@@ -23,17 +23,17 @@ classdef Dataset
                 set_name = identifiers(3);
     
                 if ~isfield(db.repositories, reponame)
-                    error("Specified repository does not exist in db.");
+                    error("Specified repository '%s' does not exist in db.", reponame);
                 end
                 repopath = db.repositories.(reponame);
     
                 partpath = fullfile(repopath, partname);
                 if ~isfolder(partpath)
-                    error("Specified partition does not exist.")
+                    error("Specified partition %s/%s does not exist.", reponame, partname)
                 end
                 datasetpath = fullfile(partpath, set_name);
                 if ~isfolder(datasetpath)
-                    error("Specified dataset does not exist as folder.")
+                    error("Specified dataset '%s' does not exist as folder.", datasetpath)
                 end
             else
                 datasetpath = identifier;

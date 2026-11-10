@@ -29,10 +29,13 @@ function build_pipeline(yamlfile)
                 dataset_name_fundamental = dataset_names(d_i);
                 dataset_def = part_def.(dataset_name_fundamental);
 
+                fprintf("PIPING: %s/%s/%s", reponame, partname, dataset_name_fundamental);
                 count = 1;
                 if isfield(dataset_def, "count")
                     count = dataset_def.count;
+                    fprintf(" 1:%d",count);
                 end
+                fprintf("\n");
 
                 for c_i = 1:count
                     dataset_name = dataset_name_fundamental;

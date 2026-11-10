@@ -94,7 +94,7 @@ function stack = apply_to_dataset(task, dataset, force, force_dependencies, stac
 
         tag_filter_match = true;
         for tf_i = 1:length(dep.tag_filters)
-            tag_filter = dep.tag_filters(tf_i);
+            tag_filter = dep.tag_filters{tf_i};
             if ~(dataset_obj.tagvalueis(tag_filter.tag, tag_filter.value))
                 tag_filter_match = false;
                 break;

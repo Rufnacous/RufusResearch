@@ -28,7 +28,7 @@ classdef Depend
             for i = 1:2:numel(varargin)
                 name = varargin{i};
                 value = varargin{i+1};
-                obj.tag_filters(end+1) = struct("tag", name, "value", value);
+                obj.tag_filters{end+1} = struct("tag", name, "value", value);
             end
         end
 
